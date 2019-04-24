@@ -12,12 +12,7 @@ To install pytorch, follow instructions from [pytorch.org](https://pytorch.org/)
 pip install https://download.pytorch.org/whl/cpu/torch-1.0.1.post2-cp37-cp37m-linux_x86_64.whl
 ```
 
-`cvxstrat` is available on Pip:
-```
-pip install cvxstrat
-```
-
-To install the latest version, run:
+To install the latest version, clone the repository and run:
 ```
 python setup.py install
 ```
