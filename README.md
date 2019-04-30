@@ -56,3 +56,14 @@ and then run the script; for example:
 ```
 python house.py
 ```
+
+## Citing `cvxstrat`
+
+If you use `cvxstrat`, please cite the following paper:
+
+@article{tuck2019distributed,
+    author       = {Tuck, J. and Barratt, S. and Boyd, S.},
+    title        = {A distributed method for fitting Laplacian regularized stratified models},
+    journal      = {arXiv preprint arXiv:1904.12017},
+    year         = {2019},
+}
