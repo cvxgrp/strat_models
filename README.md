@@ -22,7 +22,7 @@ python setup.py install
 To fit a stratified model, one needs to specify a base model, a graph, and data.
 
 ### Base model
-Currently, we support fitting the following
+Currently, we support fitting the following base models:
 * Bernoulli distribution
 * Poisson distribution
 * Logistic regression (binary or multi-class)
