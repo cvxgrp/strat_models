@@ -19,7 +19,39 @@ python setup.py install
 
 ## Usage
 
-To fit, for example, a linear regression model stratified based on time and location:
+To fit a stratified model, one needs to specify a base model, a graph, and data.
+
+### Base model
+There are a multitude of pre-made models to use. Currently, we support fitting the following
+* Bernoulli distribution
+* Poisson distribution
+* Logistic regression (binary or multi-class)
+* Ridge regression
+
+Each of these models has some number of optional arguments to specify, such as local regularization
+parameters or the number of threads to use for parallelizing CPU operations.
+For example, here is how to specify fitting a logistic regression model with sum-of-squares regularization
+with parameter 1 and 4 threads:
+```
+m = cvxstrat.LogisticRegression(num_threads=4, lambd=1)
+```
+
+More base models will be coming soon, as well as the ability to mix-and-match losses and local
+regularizations. It is also easy to develop your own base models; see `cvxstrat/models.py'
+for some examples.
+
+### Graph
+The graphs must be made using `networkx` Graphs. You can look more into how to build a `networkx`
+Graph [here](https://networkx.github.io/documentation/stable/tutorial.html#).
+
+### Data
+Data `X` and `Y` must be Python lists with entries being the inputs/outputs, respectively.
+`Z` must be a Python list with entries being tuples of the same form as the specified `networkx`
+Graph.
+
+For example, we fit a ridge regression model with local regularization, 
+stratified based on time and location:
+
 ```
 import cvxstrat
 import networkx as nx
@@ -34,11 +66,12 @@ X, Y, Z = get_data()
 Xtest, Ytest, Ztest = get_test_data()
 
 # Construct the model
-m = cvxstrat.LinearRegression()
+m = cvxstrat.RidgeRegression(lambd=0.05)
 m.fit(X, Y, Z, G)
 
-# Use the model to make predictions
-predictions = m.score(Xtest, Ytest, Ztest)
+# Use the model to make predictions, 
+# in this case the average negative log likelihood (ANLL)
+predictions = m.anll(Xtest, Ytest, Ztest)
 ```
 
 ## Examples
