@@ -1,6 +1,6 @@
 """Elections example.
 
-The data is from: https://electionlab.mit.edu/data
+The data is from: https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/PEJ5QU&version=2.1
 Neighboring states are from: https://github.com/ubikuity/List-of-neighboring-states-for-each-US-state/blob/master/neighbors-states.csv
 """
 
