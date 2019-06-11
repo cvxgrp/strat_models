@@ -1,6 +1,6 @@
-# cvxstrat
+# strat_models
 
-`cvxstrat` is a Python package for fitting Laplacian regularized stratified models.
+`strat_models` is a Python package for fitting Laplacian regularized stratified models.
 
 The implementation is based on our paper
 [A distributed method for fitting Laplacian regularized stratified models](http://web.stanford.edu/~boyd/papers/strat_models.html).
@@ -33,11 +33,11 @@ parameters or the number of threads to use for parallelizing CPU operations.
 For example, here is how to specify fitting a logistic regression model with sum-of-squares regularization
 with parameter 1 and 4 threads:
 ```
-m = cvxstrat.LogisticRegression(num_threads=4, lambd=1)
+m = strat_models.LogisticRegression(num_threads=4, lambd=1)
 ```
 
 More base models will be coming soon, as well as the ability to mix-and-match losses and local
-regularizations. It is also easy to develop your own base models; see `cvxstrat/models.py'
+regularizations. It is also easy to develop your own base models; see `strat_models/models.py'
 for some examples.
 
 ### Graph
@@ -53,20 +53,20 @@ For example, we fit a ridge regression model with local regularization,
 stratified based on time and location:
 
 ```
-import cvxstrat
+import strat_models
 import networkx as nx
 
 # G is the cartesian product of a cycle graph and a path graph
 G_time = nx.cycle_graph(10)
 G_location = nx.path_graph(20)
-G = cvxstrat.cartesian_product([G_time, G_location])
+G = strat_models.cartesian_product([G_time, G_location])
 
 # Get the data
 X, Y, Z = get_data()
 Xtest, Ytest, Ztest = get_test_data()
 
 # Construct the model
-m = cvxstrat.RidgeRegression(lambd=0.05)
+m = strat_models.RidgeRegression(lambd=0.05)
 m.fit(X, Y, Z, G)
 
 # Use the model to make predictions, 
@@ -90,12 +90,12 @@ and then run the script; for example:
 python house.py
 ```
 
-## Citing `cvxstrat`
+## Citing `strat_models`
 
-If you use `cvxstrat`, please cite the following paper:
+If you use `strat_models`, please cite the following paper:
 
 ```
-@article{tuck2019distributed,
+@article{strat_models,
     author       = {Tuck, J. and Barratt, S. and Boyd, S.},
     title        = {A distributed method for fitting Laplacian regularized stratified models},
     journal      = {arXiv preprint arXiv:1904.12017},
