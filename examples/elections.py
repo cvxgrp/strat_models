@@ -10,7 +10,7 @@ import networkx as nx
 import matplotlib
 import matplotlib.pyplot as plt
 
-import cvxstrat
+import strat_models
 from utils import latexify
 
 # Load data
@@ -64,10 +64,10 @@ G_time = nx.relabel_nodes(G_time, dict(zip(np.arange(n_years), years)))
 
 kwargs = dict(abs_tol=1e-5, rel_tol=1e-5, maxiter=200, n_jobs=4)
 
-fully = cvxstrat.Bernoulli()
-cvxstrat.set_edge_weight(G_state, 0)
-cvxstrat.set_edge_weight(G_time, 0)
-G = cvxstrat.cartesian_product([G_state, G_time])
+fully = strat_models.Bernoulli()
+strat_models.set_edge_weight(G_state, 0)
+strat_models.set_edge_weight(G_time, 0)
+G = strat_models.cartesian_product([G_state, G_time])
 info = fully.fit(Y_train, Z_train, G, **kwargs)
 anll_train = fully.anll(Y_train, Z_train)
 anll_test = fully.anll(Y_test, Z_test)
@@ -75,10 +75,10 @@ print("Separate model")
 print("\t", info)
 print("\t", anll_train, anll_test)
 
-strat = cvxstrat.Bernoulli()
-cvxstrat.set_edge_weight(G_state, 1)
-cvxstrat.set_edge_weight(G_time, 4)
-G = cvxstrat.cartesian_product([G_state, G_time])
+strat = strat_models.Bernoulli()
+strat_models.set_edge_weight(G_state, 1)
+strat_models.set_edge_weight(G_time, 4)
+G = strat_models.cartesian_product([G_state, G_time])
 info = strat.fit(Y_train, Z_train, G, **kwargs)
 anll_train = strat.anll(Y_train, Z_train)
 anll_test = strat.anll(Y_test, Z_test)
@@ -86,7 +86,7 @@ print("Stratified model")
 print("\t", info)
 print("\t", anll_train, anll_test)
 
-common = cvxstrat.Bernoulli()
+common = strat_models.Bernoulli()
 info = common.fit(Y_train, [0] * len(Y_train), nx.empty_graph(1), **kwargs)
 anll_train = common.anll(Y_train, [0] * len(Y_train))
 anll_test = common.anll(Y_test, [0] * len(Y_test))

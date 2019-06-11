@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(
-    name="cvxstrat",
+    name="strat_models",
     version="1.0.0",
     author="Jonathan Tuck, Shane Barratt",
     description="Laplacian regularized stratified models",
@@ -18,7 +18,7 @@ setup(
         "scikit-learn >= 0.20",
         "torch >= 1.0"],
     license="Apache License, Version 2.0",
-    url="http://github.com/cvxgrp/cvxstrat/",
+    url="http://github.com/cvxgrp/strat_models/",
     classifiers=[
         "Programming Language :: Python :: 3",
     ],

@@ -1,4 +1,4 @@
-from cvxstrat.fit import fit_stratified_model
+from strat_models.fit import fit_stratified_model
 
 import numpy as np
 from scipy.stats import poisson, bernoulli

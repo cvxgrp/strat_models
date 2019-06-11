@@ -14,7 +14,7 @@ from sklearn.utils import shuffle
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestRegressor
 
-import cvxstrat
+import strat_models
 from utils import latexify
 
 # Load data
@@ -76,23 +76,23 @@ lam = 0.01
 def rms(x):
     return np.sqrt(np.mean(np.square(x)))
 
-fully = cvxstrat.RidgeRegression(lambd=lam)
-cvxstrat.set_edge_weight(G, 1e-8)
+fully = strat_models.RidgeRegression(lambd=lam)
+strat_models.set_edge_weight(G, 1e-8)
 info = fully.fit(X_train, Y_train, Z_train, G, **kwargs)
 score = fully.score(X_test, Y_test, Z_test)
 print("Fully")
 print("\t", info)
 print("\t", score)
 
-strat = cvxstrat.RidgeRegression(lambd=lam)
-cvxstrat.set_edge_weight(G, 15)
+strat = strat_models.RidgeRegression(lambd=lam)
+strat_models.set_edge_weight(G, 15)
 info = strat.fit(X_train, Y_train, Z_train, G, **kwargs)
 score = strat.score(X_test, Y_test, Z_test)
 print("Strat")
 print("\t", info)
 print("\t", score)
 
-common = cvxstrat.RidgeRegression(lambd=lam)
+common = strat_models.RidgeRegression(lambd=lam)
 info = common.fit(X_train, Y_train, [0] * X_train.shape[0],
                   nx.empty_graph(1), **kwargs)
 score = common.score(X_test, Y_test, [0] * X_test.shape[0])

@@ -1,4 +1,4 @@
-import cvxstrat
+import strat_models
 
 import networkx as nx
 import numpy as np
@@ -18,7 +18,7 @@ def test_simple():
 
     L = 1e-1 * nx.laplacian_matrix(nx.gnm_random_graph(K, 5 * K))
 
-    result, info = cvxstrat.fit_stratified_model(
+    result, info = strat_models.fit_stratified_model(
         L, shape, l_prox, r_prox, abs_tol=1e-8, rel_tol=1e-8, maxiter=200, n_jobs=1, verbose=True)
 
     theta = result['theta']
@@ -46,7 +46,7 @@ def test_poisson():
 
     L = 1e-1 * nx.laplacian_matrix(nx.gnm_random_graph(K, 5 * K))
 
-    result, info = cvxstrat.fit_stratified_model(
+    result, info = strat_models.fit_stratified_model(
         L, shape, l_prox, r_prox, abs_tol=1e-5, rel_tol=1e-5, maxiter=200, n_jobs=6, verbose=True)
     theta = result['theta']
     residual = N - S / theta + L @ theta
@@ -62,7 +62,7 @@ def test_regression():
     Z = np.random.randint(K, size=500)
     Y = np.random.randn(500, m)
 
-    p = cvxstrat.RidgeRegression()
+    p = strat_models.RidgeRegression()
     p.fit(X, Y, Z, G, inplace=True, verbose=True)
 
     score = p.score(X, Y, Z)
@@ -79,7 +79,7 @@ def test_log_reg():
     Z = np.random.randint(K, size=1000)
     Y = np.random.randint(1, 10, size=1000)
 
-    p = cvxstrat.LogisticRegression()
+    p = strat_models.LogisticRegression()
     p.fit(X, Y, Z, G, inplace=True, verbose=True, n_jobs=12)
 
     anll = p.anll(X, Y, Z)
@@ -96,7 +96,7 @@ def test_bernoulli():
     Z = np.random.randint(K, size=1_00_000)
     Y = np.random.randint(0, 2, size=1_00_000)
 
-    p = cvxstrat.Bernoulli()
+    p = strat_models.Bernoulli()
     p.fit(Y, Z, G, inplace=True, verbose=True, n_jobs=12)
 
     anll = p.anll(Y, Z)
@@ -111,7 +111,7 @@ def test_poisson_model():
     Z = np.random.randint(K, size=1_000_000)
     Y = np.random.randint(1, 10, size=1_000_000)
 
-    p = cvxstrat.Poisson()
+    p = strat_models.Poisson()
     p.fit(Y, Z, G, inplace=True, verbose=True, n_jobs=12)
 
     anll = p.anll(Y, Z)

@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-import cvxstrat
+import strat_models
 from utils import latexify
 
 
@@ -62,10 +62,10 @@ G_age = nx.relabel_nodes(G_age, index_to_age)
 kwargs = dict(rel_tol=1e-4, abs_tol=1e-4, maxiter=500,
               n_jobs=12, verbose=0, rho=2., max_cg_iterations=30)
 
-fully = cvxstrat.LogisticRegression(lambd=.1)
-cvxstrat.set_edge_weight(G_sex, 0)
-cvxstrat.set_edge_weight(G_age, 0)
-G = cvxstrat.cartesian_product([G_sex, G_age])
+fully = strat_models.LogisticRegression(lambd=.1)
+strat_models.set_edge_weight(G_sex, 0)
+strat_models.set_edge_weight(G_age, 0)
+G = strat_models.cartesian_product([G_sex, G_age])
 info = fully.fit(X_train, Y_train, Z_train, G, **kwargs)
 anll_test = fully.anll(X_test, Y_test, Z_test)
 pred_error = prediction_error(X_test, Y_test, Z_test, fully)
@@ -74,10 +74,10 @@ print('Separate model')
 print('\t', info)
 print('\t', anll_test, pred_error)
 
-strat = cvxstrat.LogisticRegression(lambd=.1)
-cvxstrat.set_edge_weight(G_sex, 10)
-cvxstrat.set_edge_weight(G_age, 500)
-G = cvxstrat.cartesian_product([G_sex, G_age])
+strat = strat_models.LogisticRegression(lambd=.1)
+strat_models.set_edge_weight(G_sex, 10)
+strat_models.set_edge_weight(G_age, 500)
+G = strat_models.cartesian_product([G_sex, G_age])
 info = strat.fit(X_train, Y_train, Z_train, G, **kwargs)
 anll_test = strat.anll(X_test, Y_test, Z_test)
 pred_error = prediction_error(X_test, Y_test, Z_test, strat)
@@ -86,7 +86,7 @@ print('Stratified model')
 print('\t', info)
 print('\t', anll_test, pred_error)
 
-common = cvxstrat.LogisticRegression(lambd=.1)
+common = strat_models.LogisticRegression(lambd=.1)
 info = common.fit(X_train, Y_train, [0] *
                   len(Y_train), nx.empty_graph(1), **kwargs)
 anll_test = common.anll(X_test, Y_test, [0] * len(Y_test))

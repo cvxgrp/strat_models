@@ -13,7 +13,7 @@ from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
 from scipy.stats import poisson
 
-import cvxstrat
+import strat_models
 from utils import latexify
 
 
@@ -58,7 +58,7 @@ G_location = nx.grid_2d_graph(bins, bins)
 G_week = nx.cycle_graph(52)
 G_day = nx.cycle_graph(7)
 G_hour = nx.cycle_graph(24)
-G = cvxstrat.cartesian_product([G_location, G_week, G_day, G_hour])
+G = strat_models.cartesian_product([G_location, G_week, G_day, G_hour])
 L = nx.laplacian_matrix(G)
 K = L.shape[0]
 
@@ -98,12 +98,12 @@ del G
 # Fit models and evaluate log likelihood
 
 kwargs = dict(rel_tol=1e-6, abs_tol=1e-6, maxiter=2000)
-cvxstrat.set_edge_weight(G_location, 0)
-cvxstrat.set_edge_weight(G_week, 0)
-cvxstrat.set_edge_weight(G_day, 0)
-cvxstrat.set_edge_weight(G_hour, 0)
-G = cvxstrat.cartesian_product([G_location, G_week, G_day, G_hour])
-fully = cvxstrat.Poisson()
+strat_models.set_edge_weight(G_location, 0)
+strat_models.set_edge_weight(G_week, 0)
+strat_models.set_edge_weight(G_day, 0)
+strat_models.set_edge_weight(G_hour, 0)
+G = strat_models.cartesian_product([G_location, G_week, G_day, G_hour])
+fully = strat_models.Poisson()
 info = fully.fit(Y_train, Z_train, G, **kwargs)
 anll_train = fully.anll(Y_train, Z_train)
 anll_test = fully.anll(Y_test, Z_test)
@@ -112,12 +112,12 @@ print("\t", info)
 print("\t", anll_train, anll_test)
 del G
 
-cvxstrat.set_edge_weight(G_location, 100)
-cvxstrat.set_edge_weight(G_week, 100)
-cvxstrat.set_edge_weight(G_day, 100)
-cvxstrat.set_edge_weight(G_hour, 100)
-G = cvxstrat.cartesian_product([G_location, G_week, G_day, G_hour])
-strat = cvxstrat.Poisson()
+strat_models.set_edge_weight(G_location, 100)
+strat_models.set_edge_weight(G_week, 100)
+strat_models.set_edge_weight(G_day, 100)
+strat_models.set_edge_weight(G_hour, 100)
+G = strat_models.cartesian_product([G_location, G_week, G_day, G_hour])
+strat = strat_models.Poisson()
 info = strat.fit(Y_train, Z_train, G, **kwargs)
 anll_train = strat.anll(Y_train, Z_train)
 anll_test = strat.anll(Y_test, Z_test)
@@ -126,7 +126,7 @@ print("\t", info)
 print("\t", anll_train, anll_test)
 del G
 
-common = cvxstrat.Poisson()
+common = strat_models.Poisson()
 info = common.fit(Y_train, [0] * len(Y_train), nx.empty_graph(1), **kwargs)
 anll_train = common.anll(Y_train, [0] * len(Y_train))
 anll_test = common.anll(Y_test, [0] * len(Y_test))
