@@ -1,3 +1,0 @@
-pandas >= 0.24
-pyarrow >= 0.10
-matplotlib >= 3.0
