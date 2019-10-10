@@ -52,7 +52,7 @@ def solve_cvxpy(Y, eta, theta, t):
 	Y = Y[0]
 	n,N = Y.shape
 	ybar = np.mean(Y,1).reshape(-1,1)
-	Yemp = Y @ Y.T / N
+	Yemp = (Y-ybar) @ (Y-ybar).T / N
 
 	S = cp.Variable((n,n))
 	nu = cp.Variable((n,1))
