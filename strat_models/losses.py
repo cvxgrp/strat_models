@@ -338,12 +338,14 @@ class mean_covariance_max_likelihood_loss(Loss):
 	def logprob(self, data, G):
 		Y = data["Y"]
 
+		N = data["Y"][1].shape[0]
+
 		thetas = [G.node[z]["theta"] for z in data["Z"]]
 		S = [theta[:,:-1] for theta in thetas]
 		nu = [theta[:,-1].reshape(-1,1) for theta in thetas]
 
-		logprobs = [np.trace(S[i] @ Y[i] @ Y[i].T) - np.linalg.slogdet(S[i])[1] 
-						- 2*Y[i].T@nu[i] + nu[i].T @ np.linalg.inv(S[i]) @ nu[i] 
+		logprobs = [np.trace(S[i] @ Y[i] @ Y[i].T) - N*np.linalg.slogdet(S[i])[1] 
+						- 2*N*Y[i].T@nu[i] + N*nu[i].T @ np.linalg.inv(S[i]) @ nu[i] 
 							for i in range(len(thetas))]
 		return logprobs
 
