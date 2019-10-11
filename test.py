@@ -183,19 +183,20 @@ def test_joint_mean_covariance():
 	G.add_edge(2,0,weight=1)
 	Z = np.array(list(G.nodes()))
 
-	n = 15
+	n = 10
 	mus = [np.ones(n) for _ in range(K)]
 	S = [np.random.randn(n,n) for _ in range(K)]
 	S = [np.cov(s) + np.eye(n) for s in S]
 
-	Y = [np.random.multivariate_normal(mus[k], S[k], 2000).T for k in range(K)]
+	Y = [np.random.multivariate_normal(mus[k], S[k], 30).T for k in range(K)]
 
-	bm = strat_models.BaseModel(loss=strat_models.losses.mean_covariance_max_likelihood_loss())
+	bm = strat_models.BaseModel(loss=strat_models.losses.mean_covariance_max_likelihood_loss(),
+			reg=strat_models.regularizers.sum_squares_reg(lambd=0))
 	sm = strat_models.StratifiedModel(bm, graph=G)
 
 	data = dict(Y=Y, Z=Z, n=n)
 
-	kwargs = dict(verbose=True, abs_tol=1e-4, maxiter=30, n_jobs=4)
+	kwargs = dict(verbose=True, abs_tol=1e-4, maxiter=20, n_jobs=2)
 
 	info = sm.fit(data, **kwargs)
 

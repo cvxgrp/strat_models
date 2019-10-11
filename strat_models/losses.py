@@ -3,7 +3,6 @@ import torch
 from sklearn import preprocessing
 from scipy.stats import poisson, bernoulli
 import cvxpy as cp
-
 from scipy.optimize import minimize
 
 class Loss:
@@ -45,6 +44,64 @@ def turn_into_iterable(x):
         return [x]
     else:
         return x
+
+def mean_cov_prox_lbfgs(Y, eta, theta, t):
+	if Y is None:
+		return eta
+	Y = Y[0]
+	n,N = Y.shape
+
+	ybar = np.mean(Y,1).reshape(-1,1)
+	# Yemp = np.cov(Y)
+	Yemp = (Y)@(Y).T/N
+
+	T = eta[:,:-1]
+	tt = eta[:, -1].reshape(-1,1)
+
+	def loss_fcn(Snu):
+		Snu = Snu.reshape(n, n+1)
+
+		S = Snu[:,:-1]
+		nu = Snu[:, -1].reshape(-1,1)
+
+		if not np.all(np.linalg.eigvals(S) >= 0):
+			return float(np.inf)
+
+		eps = 1./(2*t)
+
+		main_part = -N*np.linalg.slogdet(S)[1] + N*np.trace(S @ Yemp) - 2*N*ybar.T @ nu
+		main_part += N*nu.T @ np.linalg.inv(S) @ nu
+
+		prox_part = eps*np.linalg.norm(Snu - eta, "fro")**2
+
+		# print(np.linalg.eigvals(Snu[:,:-1]))
+
+		return float(main_part+prox_part)
+
+	def jac_loss(Snu):
+		Snu = Snu.reshape(n, n+1)
+		S = Snu[:,:-1]
+		nu = Snu[:, -1].reshape(-1,1)
+
+		S_inv = np.linalg.inv(S)
+
+		grad_S = N * (-S_inv + Yemp - S_inv @ nu @ nu.T @ S_inv) + (1/t)*(S-T)
+		grad_nu = N * (-2*ybar + 2*S_inv@nu).reshape(-1,1) + (1/t)*(nu - tt)
+
+		grad = np.hstack((grad_S, grad_nu.reshape(-1,1)))
+
+		return grad.reshape(-1)
+
+	if N < n: #if the number of samples is less than the number of dimensions:
+		Semp = np.linalg.inv(Yemp+100*np.eye(n))
+	else:
+		Semp = np.linalg.inv(Yemp)
+
+	Snu_0 = np.hstack((Semp, Semp @ ybar)).reshape(-1)
+	options = dict(maxls=1000)
+	res = minimize(fun=loss_fcn, x0=Snu_0, method="L-BFGS-B", jac=jac_loss, options=options)
+
+	return res.x.reshape(n, n+1)
 
 def solve_cvxpy(Y, eta, theta, t):
 	if Y is None:
@@ -332,7 +389,7 @@ class mean_covariance_max_likelihood_loss(Loss):
 		"""
 		Proximal operator for joint mean-covariance estimation
 		"""
-		res = pool.starmap(solve_cvxpy, zip(cache["Y"], nu, warm_start, t*np.ones(cache["K"])))
+		res = pool.starmap(mean_cov_prox_lbfgs, zip(cache["Y"], nu, warm_start, t*np.ones(cache["K"])))
 		return np.array(res)
 
 	def logprob(self, data, G):
@@ -345,7 +402,8 @@ class mean_covariance_max_likelihood_loss(Loss):
 		nu = [theta[:,-1].reshape(-1,1) for theta in thetas]
 
 		logprobs = [np.trace(S[i] @ Y[i] @ Y[i].T) - N*np.linalg.slogdet(S[i])[1] 
-						- 2*N*Y[i].T@nu[i] + N*nu[i].T @ np.linalg.inv(S[i]) @ nu[i] 
+						- 2*N*(np.mean(Y[i],1).reshape(-1,1)).T@nu[i] 
+						+ N*nu[i].T @ np.linalg.inv(S[i]) @ nu[i] 
 							for i in range(len(thetas))]
 		return logprobs
 
