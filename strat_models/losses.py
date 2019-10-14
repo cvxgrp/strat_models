@@ -35,7 +35,7 @@ class Loss:
 		raise NotImplementedError("This method is not implemented for the parent class.")
 
 	def anll(self, data, G):
-		return np.mean(self.logprob(data, G))
+		return -np.mean(self.logprob(data, G))
 
 def turn_into_iterable(x):
     try:
