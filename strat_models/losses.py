@@ -88,7 +88,7 @@ def mean_cov_prox_lbfgs(Y, eta, theta, t):
 		grad_S = N * (-S_inv + Yemp - S_inv @ nu @ nu.T @ S_inv) + (1/t)*(S-T)
 		grad_nu = N * (-2*ybar + 2*S_inv@nu).reshape(-1,1) + (1/t)*(nu - tt)
 
-		grad = np.hstack((grad_S, grad_nu.reshape(-1,1)))
+		grad = np.hstack((grad_S, grad_nu))
 
 		return grad.reshape(-1)
 
