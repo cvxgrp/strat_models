@@ -178,9 +178,9 @@ def test_joint_mean_covariance():
 	print("Joint mean covariance test...")
 	K = 3
 	G = nx.cycle_graph(K)
-	G.add_edge(0,1,weight=1)
-	G.add_edge(1,2,weight=1)
-	G.add_edge(2,0,weight=1)
+	G.add_edge(0,1,weight=0.01)
+	G.add_edge(1,2,weight=0.01)
+	G.add_edge(2,0,weight=0.01)
 	Z = np.array(list(G.nodes()))
 
 	n = 10
@@ -188,7 +188,9 @@ def test_joint_mean_covariance():
 	S = [np.random.randn(n,n) for _ in range(K)]
 	S = [np.cov(s) + np.eye(n) for s in S]
 
-	Y = [np.random.multivariate_normal(mus[k], S[k], 30).T for k in range(K)]
+	Y = [np.random.multivariate_normal(mus[k], S[k], 9).T for k in range(K)]
+
+	[print(np.mean(y,1)) for y in Y]
 
 	bm = strat_models.BaseModel(loss=strat_models.losses.mean_covariance_max_likelihood_loss(),
 			reg=strat_models.regularizers.sum_squares_reg(lambd=0))
@@ -196,14 +198,14 @@ def test_joint_mean_covariance():
 
 	data = dict(Y=Y, Z=Z, n=n)
 
-	kwargs = dict(verbose=True, abs_tol=1e-4, maxiter=20, n_jobs=2)
+	kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=75, n_jobs=2)
 
 	info = sm.fit(data, **kwargs)
 
 	Snu = sm.G.node[0]["theta"]
 
 	S_star = np.linalg.inv(Snu[:,:-1])
-	mu_star = np.linalg.inv(Snu[:,:-1]) @ Snu[:,-1]
+	mu_star = S_star @ Snu[:,-1]
 
 	print(S[0], mus[0])
 	print(S_star, mu_star)
