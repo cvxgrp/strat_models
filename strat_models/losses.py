@@ -194,6 +194,9 @@ class sum_squares_loss(Loss):
 		Y = data['Y']
 		Z = data['Z']
 
+		if X.ndim == 1:
+			X = X.reshape(-1,1)
+
 		N, n = X.shape
 		_, m = Y.shape
 
@@ -242,16 +245,19 @@ class sum_squares_loss(Loss):
 		XtY = cache['XtY']
 		n = cache['n']
 
-		A_LU = torch.btrifact(
+		A_LU = torch.lu(
 			XtX + 1. / (2 * t) * torch.eye(n).unsqueeze(0).double())
 		b = XtY + 1. / (2 * t) * torch.from_numpy(nu)
-		x = torch.btrisolve(b, *A_LU)
+		x = torch.lu_solve(b, *A_LU)
 
 		return x.numpy()
 
 	def predict(self, data, G):
 		X = torch.from_numpy(data["X"])
-		X = torch.cat([X, torch.ones_like(X[:, 0]).unsqueeze(1)], 1)
+
+		if self.intercept:
+			X = torch.cat([X, torch.ones_like(X[:, 0]).unsqueeze(1)], 1)
+
 		theta = torch.tensor(([G.node[z]['theta_tilde'] for z in data["Z"]]))
 		return (X.unsqueeze(-1) * theta).sum(1).numpy()
 
