@@ -45,66 +45,6 @@ def turn_into_iterable(x):
     else:
         return x
 
-def mean_cov_prox_lbfgs(Y, eta, theta, t):
-	if Y is None:
-		return eta
-	Y = Y[0]
-	n,N = Y.shape
-
-	ybar = np.mean(Y,1).reshape(-1,1)
-	# Yemp = np.cov(Y)
-	Yemp = (Y)@(Y).T/N
-
-	T = eta[:,:-1]
-	tt = eta[:, -1].reshape(-1,1)
-
-	def loss_fcn(Snu):
-		Snu = Snu.reshape(n+1, n).T
-
-		S = Snu[:,:-1]
-		nu = Snu[:, -1].reshape(-1,1)
-
-		if not np.all(np.linalg.eigvals(S) >= 0):
-			return float(np.inf)
-
-		eps = 1./(2*t)
-
-		main_part = -np.linalg.slogdet(S)[1] + np.trace(S @ Yemp) - 2*ybar.T @ nu
-		main_part += nu.T @ np.linalg.inv(S) @ nu
-
-		prox_part = eps*np.linalg.norm(Snu - eta, "fro")**2
-
-		# print(np.linalg.eigvals(Snu[:,:-1]))
-
-		return float(N*main_part+prox_part)
-
-	def jac_loss(Snu):
-		Snu = Snu.reshape(n+1, n).T
-		S = Snu[:,:-1]
-		nu = Snu[:, -1].reshape(-1,1)
-
-		S_inv = np.linalg.inv(S)
-
-		grad_S = N * (-S_inv + Yemp - S_inv @ nu @ nu.T @ S_inv) + (1/t)*(S-T)
-		grad_nu = N * (-2*ybar + 2*S_inv@nu) + (1/t)*(nu - tt)
-
-		grad = np.hstack((grad_S, grad_nu))
-
-		return grad.T.flatten()
-
-	if N < n: #if the number of samples is less than the number of dimensions:
-		# Semp = np.linalg.inv(Yemp+100*np.eye(n))
-		Snu_0 = np.hstack((np.eye(n), ybar)).T.flatten()
-
-	else:
-		Semp = np.linalg.inv(Yemp)
-		Snu_0 = np.hstack((Semp, Semp.T @ ybar)).T.flatten()
-
-	options = dict(maxls=1000)
-	res = minimize(fun=loss_fcn, x0=Snu_0, method="L-BFGS-B", jac=jac_loss, options=options)
-
-	return res.x.reshape(n+1, n).T
-
 def solve_cvxpy(Y, eta, theta, t):
 	if Y is None:
 		return eta
@@ -397,7 +337,7 @@ class mean_covariance_max_likelihood_loss(Loss):
 		"""
 		Proximal operator for joint mean-covariance estimation
 		"""
-		res = pool.starmap(mean_cov_prox_lbfgs, zip(cache["Y"], nu, warm_start, t*np.ones(cache["K"])))
+		res = pool.starmap(solve_cvxpy, zip(cache["Y"], nu, warm_start, t*np.ones(cache["K"])))
 		return np.array(res)
 
 	def logprob(self, data, G):
