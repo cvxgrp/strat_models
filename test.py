@@ -42,7 +42,8 @@ def test_ridge_regression():
 	Y = np.random.randn(500, m)
 
 	bm = strat_models.BaseModel(
-		loss=strat_models.losses.sum_squares_loss(intercept=True), reg=strat_models.regularizers.sum_squares_reg(lambd=1))
+		loss=strat_models.losses.sum_squares_loss(intercept=False), 
+		reg=strat_models.regularizers.sum_squares_reg(lambd=1))
 
 	sm = strat_models.StratifiedModel(bm, graph=G)
 
