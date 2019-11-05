@@ -45,7 +45,7 @@ def turn_into_iterable(x):
     else:
         return x
 
-def solve_cvxpy(Y, eta, theta, t):
+def mean_cov_prox_cvxpy(Y, eta, theta, t):
 	if Y is None:
 		return eta
 	Y = Y[0]
@@ -337,7 +337,7 @@ class mean_covariance_max_likelihood_loss(Loss):
 		"""
 		Proximal operator for joint mean-covariance estimation
 		"""
-		res = pool.starmap(solve_cvxpy, zip(cache["Y"], nu, warm_start, t*np.ones(cache["K"])))
+		res = pool.starmap(mean_cov_prox_cvxpy, zip(cache["Y"], nu, warm_start, t*np.ones(cache["K"])))
 		return np.array(res)
 
 	def logprob(self, data, G):
