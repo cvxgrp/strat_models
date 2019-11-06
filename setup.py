@@ -14,7 +14,7 @@ setup(
     install_requires=[
         "numpy >= 1.15",
         "scipy >= 1.2",
-        "networkx >= 2.2",
+        "networkx >= 2.4",
         "scikit-learn >= 0.20",
         "torch >= 1.0"],
     license="Apache License, Version 2.0",
