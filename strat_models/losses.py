@@ -153,7 +153,7 @@ class sum_squares_loss(Loss):
 		theta_shape = (K,) + shape
 
 		for x, y, z in zip(X, Y, Z):
-			vertex = G.node[z]
+			vertex = G._node[z]
 			if 'X' in vertex:
 				vertex['X'] += [x]
 				vertex['Y'] += [y]
@@ -164,7 +164,7 @@ class sum_squares_loss(Loss):
 		XtX = torch.zeros(K, n, n).double()
 		XtY = torch.zeros(K, n, m).double()
 		for i, node in enumerate(G.nodes()):
-			vertex = G.node[node]
+			vertex = G._node[node]
 			if 'Y' in vertex:
 				X = torch.tensor(vertex['X']).double()
 				Y = torch.tensor(vertex['Y']).double()
@@ -202,7 +202,7 @@ class sum_squares_loss(Loss):
 		if self.intercept:
 			X = torch.cat([X, torch.ones_like(X[:, 0]).unsqueeze(1)], 1)
 
-		theta = torch.tensor(([G.node[z]['theta_tilde'] for z in data["Z"]]))
+		theta = torch.tensor(([G._node[z]['theta_tilde'] for z in data["Z"]]))
 		return (X.unsqueeze(-1) * theta).sum(1).numpy()
 
 	def scores(self, data, G):
@@ -244,7 +244,7 @@ class logistic_loss(Loss):
 		theta_shape = (K,) + shape
 
 		for x, y, z in zip(X, Y, Z):
-			vertex = G.node[z]
+			vertex = G._node[z]
 			if 'X' in vertex:
 				vertex['X'] += [x]
 				vertex['Y'] += [y]
@@ -254,7 +254,7 @@ class logistic_loss(Loss):
 
 		XY_data = []
 		for i, node in enumerate(G.nodes()):
-			vertex = G.node[node]
+			vertex = G._node[node]
 			if 'Y' in vertex:
 				X, Y = torch.tensor(vertex['X']), torch.tensor(vertex['Y'])
 				X = torch.cat([X, torch.ones_like(X[:, 0]).unsqueeze(1)], 1)
@@ -281,7 +281,7 @@ class logistic_loss(Loss):
 	def scores(self, data, G):
 		X = torch.from_numpy(data["X"])
 		X = torch.cat([X, torch.ones_like(X[:,0]).unsqueeze(1)],1)
-		theta = torch.tensor(([G.node[z]['theta_tilde'] for z in data["Z"]]))
+		theta = torch.tensor(([G._node[z]['theta_tilde'] for z in data["Z"]]))
 		scores = (X.unsqueeze(-1) * theta).sum(1)
 		return scores
 
@@ -318,7 +318,7 @@ class mean_covariance_max_likelihood_loss(Loss):
 
 		#preprocess data
 		for y, z in zip(Y, Z):
-			vertex = G.node[z]
+			vertex = G._node[z]
 			if "Y" in vertex:
 				vertex["Y"] += [y]
 			else:
@@ -326,7 +326,7 @@ class mean_covariance_max_likelihood_loss(Loss):
 
 		Y_data = []
 		for i, node in enumerate(G.nodes()):
-			vertex = G.node[node]
+			vertex = G._node[node]
 			if 'Y' in vertex:
 				Y = vertex['Y']
 				Y_data += [Y]
@@ -349,7 +349,7 @@ class mean_covariance_max_likelihood_loss(Loss):
 
 		N = data["Y"][1].shape[0]
 
-		thetas = [G.node[z]["theta"] for z in data["Z"]]
+		thetas = [G._node[z]["theta"] for z in data["Z"]]
 		S = [theta[:,:-1] for theta in thetas]
 		nu = [theta[:,-1].reshape(-1,1) for theta in thetas]
 
@@ -362,7 +362,7 @@ class mean_covariance_max_likelihood_loss(Loss):
 
 	def sample(self, data, G):
 		Z = turn_into_iterable(data["Z"])
-		thetas = [G.node[z]["theta"] for z in data["Z"]]
+		thetas = [G._node[z]["theta"] for z in data["Z"]]
 
 		sigmas = [np.linalg.inv(theta[:,:-1]) for theta in thetas]
 		mus = [sigmas[i] @ thetas[i][:,-1] for i in range(len(sigmas))]
@@ -393,7 +393,7 @@ class covariance_max_likelihood_loss(Loss):
 
 		#preprocess data
 		for y, z in zip(Y, Z):
-			vertex = G.node[z]
+			vertex = G._node[z]
 			if "Y" in vertex:
 				vertex["Y"] += [y]
 			else:
@@ -401,7 +401,7 @@ class covariance_max_likelihood_loss(Loss):
 
 		Y_data = []
 		for i, node in enumerate(G.nodes()):
-			vertex = G.node[node]
+			vertex = G._node[node]
 			if 'Y' in vertex:
 				Y = vertex['Y']
 				Y_data += [Y]
@@ -421,13 +421,13 @@ class covariance_max_likelihood_loss(Loss):
 
 	def logprob(self, data, G):
 		Y = data["Y"]
-		thetas = [G.node[z]["theta"] for z in data["Z"]]
+		thetas = [G._node[z]["theta"] for z in data["Z"]]
 		logprobs = [np.trace(Y[i]@thetas[i]) - np.linalg.slogdet(thetas[i])[1] for i in range(len(thetas))]
 		return logprobs
 
 	def sample(self, data, G):
 		Z = turn_into_iterable(data["Z"])
-		sigmas = [np.linalg.inv(G.node[z]["theta"]) for z in Z]
+		sigmas = [np.linalg.inv(G._node[z]["theta"]) for z in Z]
 
 		n = sigmas[0].shape[0]
 		return [np.random.multivariate_normal(np.zeros(n), sigma) for sigma in sigmas]
@@ -460,7 +460,7 @@ class poisson_loss(Loss):
 
 		#preprocess data
 		for y,z in zip(Y,Z):
-			vertex = G.node[z]
+			vertex = G._node[z]
 			if "Y" in vertex:
 				vertex["Y"] += [y]
 			else:
@@ -470,7 +470,7 @@ class poisson_loss(Loss):
 		N = np.zeros((K,1))
 
 		for i, node in enumerate(G.nodes()):
-			vertex = G.node[node]
+			vertex = G._node[node]
 			if "Y" in vertex:
 				S[i] = np.sum(vertex["Y"])
 				N[i] = len(vertex["Y"])
@@ -491,12 +491,12 @@ class poisson_loss(Loss):
 	def logprob(self, data, G):
 		Y = turn_into_iterable(data["Y"])
 		Z = turn_into_iterable(data["Z"])
-		parameter = [G.node[z]["theta"][0] for z in Z]
+		parameter = [G._node[z]["theta"][0] for z in Z]
 		return poisson.logpmf(Y, mu=parameter)
 
 	def sample(self, data, G):
 		Z = turn_into_iterable(data["Z"])
-		parameter = [G.node[z]["theta"][0] for z in Z]
+		parameter = [G._node[z]["theta"][0] for z in Z]
 		return poisson.rvs(mu=parameter)
 
 class bernoulli_loss(Loss):
@@ -525,7 +525,7 @@ class bernoulli_loss(Loss):
 
 		#preprocess data
 		for y, z in zip(Y,Z):
-			vertex = G.node[z]
+			vertex = G._node[z]
 			if "Y" in vertex:
 				vertex["Y"] += [y]
 			else:
@@ -535,7 +535,7 @@ class bernoulli_loss(Loss):
 		N = np.zeros((K,1))
 
 		for i, node in enumerate(G.nodes()):
-			vertex = G.node[node]
+			vertex = G._node[node]
 			if 'Y' in vertex:
 				S[i] = np.sum(vertex['Y'])
 				N[i] = len(vertex['Y'])
@@ -561,10 +561,10 @@ class bernoulli_loss(Loss):
 	def logprob(self, data, G):
 		Y = turn_into_iterable(data["Y"])
 		Z = turn_into_iterable(data["Z"])
-		parameter = [G.node[z]["theta"][0] for z in Z]
+		parameter = [G._node[z]["theta"][0] for z in Z]
 		return bernoulli.logpmf(Y, p=parameter)
 
 	def sample(self, data, G):
 		Z = turn_into_iterable(data["Z"])
-		parameter = [G.node[z]["theta"][0] for z in Z]
+		parameter = [G._node[z]["theta"][0] for z in Z]
 		return bernoulli.rvs(p=parameter)

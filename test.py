@@ -203,7 +203,7 @@ def test_joint_mean_covariance():
 
 	info = sm.fit(data, **kwargs)
 
-	Snu = sm.G.node[0]["theta"]
+	Snu = sm.G._node[0]["theta"]
 
 	S_star = np.linalg.inv(Snu[:,:-1])
 	mu_star = S_star @ Snu[:,-1]
