@@ -50,8 +50,12 @@ def mean_cov_prox_cvxpy(Y, eta, theta, t):
 		return eta
 	Y = Y[0]
 	n,N = Y.shape
-	ybar = np.mean(Y,1).reshape(-1,1)
-	Yemp = Y @ Y.T / N
+
+	ybar = cp.Parameter((n,1))
+	ybar.value = np.mean(Y,1).reshape(-1,1)
+
+	Yemp = cp.Parameter((n,n))
+	Yemp.value = Y @ Y.T / N
 
 	S = cp.Variable((n,n))
 	nu = cp.Variable((n,1))
@@ -65,7 +69,7 @@ def mean_cov_prox_cvxpy(Y, eta, theta, t):
 	prox_part = eps * cp.sum_squares(nu-eta[:, -1].reshape(-1,1))
 	prox_part += eps * cp.norm(S-eta[:, :-1], "fro")**2
 	prob = cp.Problem(cp.Minimize(N*main_part+prox_part))
-	    
+
 	prob.solve(verbose=False, warm_start=True)
 
 	return np.hstack((S.value, nu.value))
