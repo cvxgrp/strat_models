@@ -72,7 +72,8 @@ def test_lasso():
 	Y = np.random.randn(500, m)
 
 	bm = strat_models.BaseModel(
-		loss=strat_models.losses.sum_squares_loss(intercept=True), reg=strat_models.regularizers.L1_reg(lambd=1))
+		loss=strat_models.losses.sum_squares_loss(intercept=True), 
+		reg=strat_models.regularizers.L1_reg(lambd=1))
 
 	sm = strat_models.StratifiedModel(bm, graph=G)
 
@@ -87,8 +88,6 @@ def test_lasso():
 	print("ANLL is {}".format(sm.anll(data)))
 
 	print("lasso done.")
-
-
 
 def test_log_reg():
 	print("Logistic regression test...")
@@ -114,7 +113,6 @@ def test_log_reg():
 
 	print("logreg done.")
 
-
 def test_bernoulli():
 	print("Bernoulli test...")
 
@@ -130,7 +128,8 @@ def test_bernoulli():
 	# print(sample)
 	# print(anll)
 
-	bm = strat_models.BaseModel(loss=strat_models.losses.bernoulli_loss(1e-5,1-1e-5), reg=strat_models.regularizers.clip_reg((1e-5,1-1e-5)))
+	bm = strat_models.BaseModel(loss=strat_models.losses.bernoulli_loss(1e-5,1-1e-5), 
+		reg=strat_models.regularizers.clip_reg((1e-5,1-1e-5)))
 	sm = strat_models.StratifiedModel(bm, graph=G)
 	data = dict(Y=Y,Z=Z)
 	kwargs = dict(verbose=True, abs_tol=1e-4, maxiter=500, n_jobs=2)
@@ -156,7 +155,8 @@ def test_trace_minus_logdet():
 
 	Z = np.array(list(G.nodes()))
 	Y = [np.cov(np.random.randn(n,n)) + np.eye(n) for _ in range(K)]
-	bm = strat_models.BaseModel(loss=strat_models.losses.covariance_max_likelihood_loss(), reg=strat_models.regularizers.L1_reg(lambd=1))
+	bm = strat_models.BaseModel(loss=strat_models.losses.covariance_max_likelihood_loss(), 
+		reg=strat_models.regularizers.L1_reg(lambd=1))
 	sm = strat_models.StratifiedModel(bm, graph=G)
 
 	data = dict(Y=Y, Z=Z, n=n)
@@ -199,7 +199,7 @@ def test_joint_mean_covariance():
 
 	data = dict(Y=Y, Z=Z, n=n)
 
-	kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=75, n_jobs=2)
+	kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=20, n_jobs=2)
 
 	info = sm.fit(data, **kwargs)
 
