@@ -238,45 +238,17 @@ def fit_eigen_stratified_model(Q_tilde, eigvals, shape, l_prox, r_prox, G_data=d
         #Z update
         start_time_2 = time.perf_counter()
 
-        # print("K = ", K)
-        # print(u.shape)
-        # print(theta_tilde.shape)
-        # print(Q_tilde.shape)
-        # print(eigvals)
-
         Z = rho * (u.T + theta_tilde.T) @ Q_tilde * (1/(eigvals+rho))
         time_2 = time.perf_counter() - start_time_2
 
         # theta_tilde update
         start_time_3 = time.perf_counter()
 
-        # print(Z.shape)
-        # print((Q_tilde.T).shape)
-        # print((Z@Q_tilde.T).shape)
-        # print(theta.shape)
-
         ZQ_tilde_T = (Z@Q_tilde.T).T
-        # print("ZQ_tilde_T ", ZQ_tilde_T.shape)
-        # print(u_tilde.shape)
 
         theta_tilde = r_prox(1. / rho, ZQ_tilde_T -
                              u_tilde, theta_tilde, prox_pool)
         time_3 = time.perf_counter() - start_time_3
-
-        # # theta_hat update
-        # start_time_3 = time.perf_counter()
-        # sys = L + 2 * rho * sparse.eye(K)
-        # M = sparse.diags(1. / sys.diagonal())
-        # indices = np.ndindex(shape)
-        # rhs = rho * (theta.T + u.T + theta_tilde.T + u_tilde.T)
-        # for i, ind in enumerate(indices):
-        #     index = ind[::-1]
-        #     sol = splinalg.cg(sys, rhs[index], M=M,
-        #                       x0=theta_hat.T[index], maxiter=max_cg_iterations)[0]
-        #     res_dual.T[index] = -rho * (sol - theta_hat.T[index])
-        #     res_dual_tilde.T[index] = res_dual.T[index]
-        #     theta_hat.T[index] = sol
-        # time_3 = time.perf_counter() - start_time_3
 
         # u and u_tilde update
         res_pri = theta - theta_tilde
