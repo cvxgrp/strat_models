@@ -150,9 +150,10 @@ class StratifiedModel:
 			self.K = L.shape[0]
 			return L
 		else:
-			eigvals, Q_tilde = scipy.sparse.linalg.eigs(nx.laplacian_matrix(self.G), which="SM", k=num_eigen+1, return_eigenvectors=True)
-			eigvals = np.real(eigvals)[:num_eigen]
-			Q_tilde = np.real(Q_tilde)[:,:num_eigen]
+			# eigvals, Q_tilde = scipy.sparse.linalg.eigs(nx.laplacian_matrix(self.G), which="SM", k=num_eigen+1, return_eigenvectors=True)
+			eigvals, Q_tilde = np.linalg.eigh(nx.laplacian_matrix(self.G).A)
+			eigvals = eigvals[:num_eigen]
+			Q_tilde = Q_tilde[:,:num_eigen]
 			self.nodelist = self.G.nodes()
 			self.K = L.shape[0]
 			return eigvals, Q_tilde	
