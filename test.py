@@ -3,6 +3,37 @@ import strat_models
 import networkx as nx
 import numpy as np
 
+
+def test_ridge_regression_EIGEN():
+	"""Example: solve ||X\theta - Y||^2 + ||\theta||^2"""
+
+	print("ridge regression test...")
+	K = 100
+	G = nx.cycle_graph(K)
+	n = 10
+	m = 2
+	X = np.random.randn(500, n)
+	Z = np.random.randint(K, size=500)
+	Y = np.random.randn(500, m)
+
+	bm = strat_models.BaseModel(
+		loss=strat_models.losses.sum_squares_loss(intercept=False), 
+		reg=strat_models.regularizers.sum_squares_reg(lambd=1))
+
+	sm = strat_models.StratifiedModel(bm, graph=G)
+
+	data = dict(X=X, Y=Y, Z=Z)
+	kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=500)
+
+	info = sm.fit(data, num_eigen=30, **kwargs)
+	assert info["optimal"]
+
+	predictions = sm.predict(data=data)
+
+	print("ANLL is {}".format(sm.anll(data)))
+
+	print("eigen-stratified ridge regression done.")
+
 def test_poisson():
 	print("Poisson test...")
 
@@ -221,6 +252,8 @@ def test_joint_mean_covariance():
 
 if __name__ == '__main__':
 	np.random.seed(0)
+	test_ridge_regression_EIGEN()
+
 	test_joint_mean_covariance()
 	test_trace_minus_logdet()
 	test_ridge_regression()
