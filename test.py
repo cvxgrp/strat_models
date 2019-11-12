@@ -1,272 +1,260 @@
 import strat_models
+import unittest
 
 import networkx as nx
 import numpy as np
 
 
-def test_ridge_regression_EIGEN():
-    """Example: solve ||X\theta - Y||^2 + ||\theta||^2"""
+class TestStratModels(unittest.TestCase):
 
-    print("ridge regression test...")
-    K = 100
-    G = nx.cycle_graph(K)
-    n = 10
-    m = 2
-    X = np.random.randn(500, n)
-    Z = np.random.randint(K, size=500)
-    Y = np.random.randn(500, m)
+    def test_ridge_regression_EIGEN(self):
+        """Example: solve ||X\theta - Y||^2 + ||\theta||^2"""
 
-    bm = strat_models.BaseModel(
-        loss=strat_models.losses.sum_squares_loss(intercept=False),
-        reg=strat_models.regularizers.sum_squares_reg(lambd=1))
+        print("ridge regression test...")
+        K = 100
+        G = nx.cycle_graph(K)
+        n = 10
+        m = 2
+        X = np.random.randn(500, n)
+        Z = np.random.randint(K, size=500)
+        Y = np.random.randn(500, m)
 
-    sm = strat_models.StratifiedModel(bm, graph=G)
+        bm = strat_models.BaseModel(
+            loss=strat_models.losses.sum_squares_loss(intercept=False),
+            reg=strat_models.regularizers.sum_squares_reg(lambd=1))
 
-    data = dict(X=X, Y=Y, Z=Z)
-    kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=500)
+        sm = strat_models.StratifiedModel(bm, graph=G)
 
-    info = sm.fit(data, num_eigen=30, **kwargs)
-    assert info["optimal"]
+        data = dict(X=X, Y=Y, Z=Z)
+        kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=500)
 
-    predictions = sm.predict(data=data)
+        info = sm.fit(data, num_eigen=30, **kwargs)
+        assert info["optimal"]
 
-    print("ANLL is {}".format(sm.anll(data)))
+        predictions = sm.predict(data=data)
 
-    print("eigen-stratified ridge regression done.")
+        print("ANLL is {}".format(sm.anll(data)))
 
+        print("eigen-stratified ridge regression done.")
 
-def test_poisson():
-    print("Poisson test...")
+    def test_poisson(self):
+        print("Poisson test...")
 
-    K = 1000
-    G = nx.cycle_graph(K)
-    Z = np.random.randint(K, size=10000)
-    Y = np.random.randint(1, 10, size=10000)
+        K = 1000
+        G = nx.cycle_graph(K)
+        Z = np.random.randint(K, size=10000)
+        Y = np.random.randint(1, 10, size=10000)
 
-    bm = strat_models.BaseModel(loss=strat_models.losses.poisson_loss(min_theta=1e-3),
-                                reg=strat_models.regularizers.min_threshold_reg_one_elem(lambd=1e-3))
+        bm = strat_models.BaseModel(loss=strat_models.losses.poisson_loss(min_theta=1e-3),
+                                    reg=strat_models.regularizers.min_threshold_reg_one_elem(lambd=1e-3))
 
-    sm = strat_models.StratifiedModel(bm, graph=G)
+        sm = strat_models.StratifiedModel(bm, graph=G)
 
-    data = dict(Y=Y, Z=Z)
-    kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=500)
+        data = dict(Y=Y, Z=Z)
+        kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=500)
 
-    info = sm.fit(data, **kwargs)
-    assert info["optimal"]
+        info = sm.fit(data, **kwargs)
+        assert info["optimal"]
 
-    data_sample = dict(Z=np.random.randint(2, size=100))
-    samples = sm.sample(data=data_sample)
+        data_sample = dict(Z=np.random.randint(2, size=100))
+        samples = sm.sample(data=data_sample)
 
-    print("ANLL is {}".format(sm.anll(data)))
+        print("ANLL is {}".format(sm.anll(data)))
 
-    print("Poisson done.")
+        print("Poisson done.")
 
+    def test_ridge_regression(self):
+        """Example: solve ||X\theta - Y||^2 + ||\theta||^2"""
 
-def test_ridge_regression():
-    """Example: solve ||X\theta - Y||^2 + ||\theta||^2"""
+        print("ridge regression test...")
+        K = 100
+        G = nx.cycle_graph(K)
+        n = 10
+        m = 2
+        X = np.random.randn(500, n)
+        Z = np.random.randint(K, size=500)
+        Y = np.random.randn(500, m)
 
-    print("ridge regression test...")
-    K = 100
-    G = nx.cycle_graph(K)
-    n = 10
-    m = 2
-    X = np.random.randn(500, n)
-    Z = np.random.randint(K, size=500)
-    Y = np.random.randn(500, m)
+        bm = strat_models.BaseModel(
+            loss=strat_models.losses.sum_squares_loss(intercept=False),
+            reg=strat_models.regularizers.sum_squares_reg(lambd=1))
 
-    bm = strat_models.BaseModel(
-        loss=strat_models.losses.sum_squares_loss(intercept=False),
-        reg=strat_models.regularizers.sum_squares_reg(lambd=1))
+        sm = strat_models.StratifiedModel(bm, graph=G)
 
-    sm = strat_models.StratifiedModel(bm, graph=G)
+        data = dict(X=X, Y=Y, Z=Z)
+        kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=500)
 
-    data = dict(X=X, Y=Y, Z=Z)
-    kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=500)
+        info = sm.fit(data, **kwargs)
+        assert info["optimal"]
 
-    info = sm.fit(data, **kwargs)
-    assert info["optimal"]
+        predictions = sm.predict(data=data)
 
-    predictions = sm.predict(data=data)
+        print("ANLL is {}".format(sm.anll(data)))
 
-    print("ANLL is {}".format(sm.anll(data)))
+        print("ridge regression done.")
 
-    print("ridge regression done.")
+    def test_lasso(self):
+        """Example: solve ||X\theta - Y||^2 + ||\theta||^2"""
 
+        print("lasso test...")
+        K = 100
+        G = nx.cycle_graph(K)
+        n = 10
+        m = 2
+        X = np.random.randn(500, n)
+        Z = np.random.randint(K, size=500)
+        Y = np.random.randn(500, m)
 
-def test_lasso():
-    """Example: solve ||X\theta - Y||^2 + ||\theta||^2"""
+        bm = strat_models.BaseModel(
+            loss=strat_models.losses.sum_squares_loss(intercept=True),
+            reg=strat_models.regularizers.L1_reg(lambd=1))
 
-    print("lasso test...")
-    K = 100
-    G = nx.cycle_graph(K)
-    n = 10
-    m = 2
-    X = np.random.randn(500, n)
-    Z = np.random.randint(K, size=500)
-    Y = np.random.randn(500, m)
+        sm = strat_models.StratifiedModel(bm, graph=G)
 
-    bm = strat_models.BaseModel(
-        loss=strat_models.losses.sum_squares_loss(intercept=True),
-        reg=strat_models.regularizers.L1_reg(lambd=1))
+        data = dict(X=X, Y=Y, Z=Z)
+        kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=500)
 
-    sm = strat_models.StratifiedModel(bm, graph=G)
+        info = sm.fit(data, **kwargs)
+        assert info["optimal"]
 
-    data = dict(X=X, Y=Y, Z=Z)
-    kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=500)
+        predictions = sm.predict(data=data)
 
-    info = sm.fit(data, **kwargs)
-    assert info["optimal"]
+        print("ANLL is {}".format(sm.anll(data)))
 
-    predictions = sm.predict(data=data)
+        print("lasso done.")
 
-    print("ANLL is {}".format(sm.anll(data)))
+    def test_log_reg(self):
+        print("Logistic regression test...")
+        K = 30
+        G = nx.cycle_graph(K)
+        n = 10
+        X = np.random.randn(1000, n)
+        Z = np.random.randint(K, size=1000)
+        Y = np.random.randint(1, 10, size=1000)
 
-    print("lasso done.")
+        bm = strat_models.BaseModel(
+            loss=strat_models.losses.logistic_loss(intercept=True))
+        sm = strat_models.StratifiedModel(bm, graph=G)
+        data = dict(X=X, Y=Y, Z=Z)
+        kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=500)
 
+        info = sm.fit(data, **kwargs)
+        assert info["optimal"]
 
-def test_log_reg():
-    print("Logistic regression test...")
-    K = 30
-    G = nx.cycle_graph(K)
-    n = 10
-    X = np.random.randn(1000, n)
-    Z = np.random.randint(K, size=1000)
-    Y = np.random.randint(1, 10, size=1000)
+        data_predict = dict(X=X[:20, :], Z=Z[:20])
+        predictions = sm.predict(data=data_predict)
 
-    bm = strat_models.BaseModel(
-        loss=strat_models.losses.logistic_loss(intercept=True))
-    sm = strat_models.StratifiedModel(bm, graph=G)
-    data = dict(X=X, Y=Y, Z=Z)
-    kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=500)
+        print("ANLL is {}".format(sm.anll(data)))
 
-    info = sm.fit(data, **kwargs)
-    assert info["optimal"]
+        print("logreg done.")
 
-    data_predict = dict(X=X[:20, :], Z=Z[:20])
-    predictions = sm.predict(data=data_predict)
+    def test_bernoulli(self):
+        print("Bernoulli test...")
 
-    print("ANLL is {}".format(sm.anll(data)))
+        K = 2
+        G = nx.cycle_graph(K)
+        Z = np.random.randint(K, size=1000)
+        Y = np.random.randint(0, 2, size=1000)
+        # p = strat_strat_models.Bernoulli()
+        # p.fit(Y, Z, G, inplace=True, verbose=True, n_jobs=12)
 
-    print("logreg done.")
+        # anll = p.anll(Y, Z)
+        # sample = p.sample(Z)
+        # print(sample)
+        # print(anll)
 
+        bm = strat_models.BaseModel(loss=strat_models.losses.bernoulli_loss(1e-5, 1 - 1e-5),
+                                    reg=strat_models.regularizers.clip_reg((1e-5, 1 - 1e-5)))
+        sm = strat_models.StratifiedModel(bm, graph=G)
+        data = dict(Y=Y, Z=Z)
+        kwargs = dict(verbose=True, abs_tol=1e-4, maxiter=500, n_jobs=2)
 
-def test_bernoulli():
-    print("Bernoulli test...")
+        info = sm.fit(data, **kwargs)
+        assert info["optimal"]
 
-    K = 2
-    G = nx.cycle_graph(K)
-    Z = np.random.randint(K, size=1000)
-    Y = np.random.randint(0, 2, size=1000)
-    # p = strat_strat_models.Bernoulli()
-    # p.fit(Y, Z, G, inplace=True, verbose=True, n_jobs=12)
+        data_sample = dict(Z=np.random.randint(2, size=100))
+        samples = sm.sample(data=data_sample)
 
-    # anll = p.anll(Y, Z)
-    # sample = p.sample(Z)
-    # print(sample)
-    # print(anll)
+        print("ANLL is {}".format(sm.anll(data)))
 
-    bm = strat_models.BaseModel(loss=strat_models.losses.bernoulli_loss(1e-5, 1 - 1e-5),
-                                reg=strat_models.regularizers.clip_reg((1e-5, 1 - 1e-5)))
-    sm = strat_models.StratifiedModel(bm, graph=G)
-    data = dict(Y=Y, Z=Z)
-    kwargs = dict(verbose=True, abs_tol=1e-4, maxiter=500, n_jobs=2)
+        print("Bernoulli done.")
 
-    info = sm.fit(data, **kwargs)
-    assert info["optimal"]
+    def test_trace_minus_logdet(self):
+        print("Trace minus logdet test...")
+        K = 3
+        n = 10
 
-    data_sample = dict(Z=np.random.randint(2, size=100))
-    samples = sm.sample(data=data_sample)
+        G = nx.cycle_graph(K)
+        for edge in G.edges():
+            G.add_edge(edge[0], edge[1], weight=0.1)
 
-    print("ANLL is {}".format(sm.anll(data)))
+        Z = np.array(list(G.nodes()))
+        Y = [np.cov(np.random.randn(n, n)) + np.eye(n) for _ in range(K)]
+        bm = strat_models.BaseModel(loss=strat_models.losses.covariance_max_likelihood_loss(),
+                                    reg=strat_models.regularizers.L1_reg(lambd=1))
+        sm = strat_models.StratifiedModel(bm, graph=G)
 
-    print("Bernoulli done.")
+        data = dict(Y=Y, Z=Z, n=n)
 
+        kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=900)
 
-def test_trace_minus_logdet():
-    print("Trace minus logdet test...")
-    K = 3
-    n = 10
+        info = sm.fit(data, **kwargs)
+        # print(info)
 
-    G = nx.cycle_graph(K)
-    for edge in G.edges():
-        G.add_edge(edge[0], edge[1], weight=0.1)
+        print("ANLL is {}".format(sm.anll(data)))
 
-    Z = np.array(list(G.nodes()))
-    Y = [np.cov(np.random.randn(n, n)) + np.eye(n) for _ in range(K)]
-    bm = strat_models.BaseModel(loss=strat_models.losses.covariance_max_likelihood_loss(),
-                                reg=strat_models.regularizers.L1_reg(lambd=1))
-    sm = strat_models.StratifiedModel(bm, graph=G)
+        assert info["optimal"]
 
-    data = dict(Y=Y, Z=Z, n=n)
+        data_sample = dict(Z=np.random.randint(K, size=5))
+        samples = sm.sample(data=data_sample)
 
-    kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=900)
+        print("Trace minus logdet done.")
 
-    info = sm.fit(data, **kwargs)
-    # print(info)
+    def test_joint_mean_covariance(self):
+        print("Joint mean covariance test...")
+        K = 3
+        G = nx.cycle_graph(K)
+        G.add_edge(0, 1, weight=0.01)
+        G.add_edge(1, 2, weight=0.01)
+        G.add_edge(2, 0, weight=0.01)
+        Z = np.array(list(G.nodes()))
 
-    print("ANLL is {}".format(sm.anll(data)))
+        n = 10
+        mus = [np.ones(n) for _ in range(K)]
+        S = [np.random.randn(n, n) for _ in range(K)]
+        S = [np.cov(s) + np.eye(n) for s in S]
 
-    assert info["optimal"]
+        Y = [np.random.multivariate_normal(
+            mus[k], S[k], 9).T for k in range(K)]
 
-    data_sample = dict(Z=np.random.randint(K, size=5))
-    samples = sm.sample(data=data_sample)
+        [print(np.mean(y, 1)) for y in Y]
 
-    print("Trace minus logdet done.")
+        bm = strat_models.BaseModel(loss=strat_models.losses.mean_covariance_max_likelihood_loss(),
+                                    reg=strat_models.regularizers.sum_squares_reg(lambd=0))
+        sm = strat_models.StratifiedModel(bm, graph=G)
 
+        data = dict(Y=Y, Z=Z, n=n)
 
-def test_joint_mean_covariance():
-    print("Joint mean covariance test...")
-    K = 3
-    G = nx.cycle_graph(K)
-    G.add_edge(0, 1, weight=0.01)
-    G.add_edge(1, 2, weight=0.01)
-    G.add_edge(2, 0, weight=0.01)
-    Z = np.array(list(G.nodes()))
+        kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=20, n_jobs=2)
 
-    n = 10
-    mus = [np.ones(n) for _ in range(K)]
-    S = [np.random.randn(n, n) for _ in range(K)]
-    S = [np.cov(s) + np.eye(n) for s in S]
+        info = sm.fit(data, **kwargs)
 
-    Y = [np.random.multivariate_normal(mus[k], S[k], 9).T for k in range(K)]
+        Snu = sm.G._node[0]["theta"]
 
-    [print(np.mean(y, 1)) for y in Y]
+        S_star = np.linalg.inv(Snu[:, :-1])
+        mu_star = S_star @ Snu[:, -1]
 
-    bm = strat_models.BaseModel(loss=strat_models.losses.mean_covariance_max_likelihood_loss(),
-                                reg=strat_models.regularizers.sum_squares_reg(lambd=0))
-    sm = strat_models.StratifiedModel(bm, graph=G)
+        print(S[0], mus[0])
+        print(S_star, mu_star)
 
-    data = dict(Y=Y, Z=Z, n=n)
+        print(info)
+        print("ANLL is {}".format(sm.anll(data)))
 
-    kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=20, n_jobs=2)
+        data_sample = dict(Z=np.random.randint(K, size=5))
+        samples = sm.sample(data=data_sample)
 
-    info = sm.fit(data, **kwargs)
-
-    Snu = sm.G._node[0]["theta"]
-
-    S_star = np.linalg.inv(Snu[:, :-1])
-    mu_star = S_star @ Snu[:, -1]
-
-    print(S[0], mus[0])
-    print(S_star, mu_star)
-
-    print(info)
-    print("ANLL is {}".format(sm.anll(data)))
-
-    data_sample = dict(Z=np.random.randint(K, size=5))
-    samples = sm.sample(data=data_sample)
-
-    print("Joint mean covariance done.")
+        print("Joint mean covariance done.")
 
 if __name__ == '__main__':
     np.random.seed(0)
-    test_ridge_regression_EIGEN()
-
-    test_joint_mean_covariance()
-    test_trace_minus_logdet()
-    test_ridge_regression()
-    test_lasso()
-    test_poisson()
-    test_bernoulli()
-    test_log_reg()
-    print("All tests passed!")
+    unittest.main()

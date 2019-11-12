@@ -93,7 +93,7 @@ def fit_stratified_model(L, shape, l_prox, r_prox, G_data=dict(), abs_tol=1e-3, 
         for i, ind in enumerate(indices):
             index = ind[::-1]
             sol = splinalg.cg(sys, rhs[index], M=M,
-                              x0=theta_hat.T[index], maxiter=max_cg_iterations)[0]
+                              x0=theta_hat.T[index], maxiter=max_cg_iterations, atol=0)[0]
             res_dual.T[index] = -rho * (sol - theta_hat.T[index])
             res_dual_tilde.T[index] = res_dual.T[index]
             theta_hat.T[index] = sol

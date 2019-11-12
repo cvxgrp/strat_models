@@ -7,14 +7,9 @@ The implementation is based on our paper
 
 ## Installation
 
-To install pytorch, follow instructions from [pytorch.org](https://pytorch.org/), e.g. (python 3.7 pip installation):
-```
-pip install https://download.pytorch.org/whl/cpu/torch-1.0.1.post2-cp37-cp37m-linux_x86_64.whl
-```
-
 To install the latest version, clone the repository and run:
 ```
-python setup.py install
+pip install .
 ```
 ## Usage
 To fit a stratified model, one needs to specify a base model, a graph, and data.
@@ -118,6 +113,17 @@ Once downloaded, place the data in a folder called `data` in the `examples` fold
 and then run the script; for example:
 ```
 python house.py
+```
+
+## Running tests
+First, install `pytest`:
+```
+pip install pytest
+```
+
+Then, in the main directory, run:
+```
+pytest test.py
 ```
 
 ## Citing `strat_models`
