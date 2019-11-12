@@ -7,6 +7,7 @@ import warnings
 import multiprocessing as mp
 import time
 
+
 def fit_stratified_model(L, shape, l_prox, r_prox, G_data=dict(), abs_tol=1e-3, rel_tol=1e-3,
                          rho=1, mu=10, tau_incr=2, tau_decr=2, max_rho=1e1, min_rho=1e-1,
                          maxiter=100, verbose=False, n_jobs=1, max_cg_iterations=10):
@@ -163,10 +164,11 @@ def fit_stratified_model(L, shape, l_prox, r_prox, G_data=dict(), abs_tol=1e-3, 
 
     return result, info
 
+
 def fit_eigen_stratified_model(Q_tilde, eigvals, shape, l_prox, r_prox, G_data=dict(), abs_tol=1e-3, rel_tol=1e-3,
-                         rho=1, mu=10, tau_incr=2, tau_decr=2, max_rho=1e1, min_rho=1e-1,
-                         maxiter=100, verbose=False, n_jobs=1, max_cg_iterations=10,
-                         num_eigenvectors=None):
+                               rho=1, mu=10, tau_incr=2, tau_decr=2, max_rho=1e1, min_rho=1e-1,
+                               maxiter=100, verbose=False, n_jobs=1, max_cg_iterations=10,
+                               num_eigenvectors=None):
     """Fits a stratified model using ADMM, as described in the paper
     `A Distributed Method for Fitting Laplacian Regularized Stratified Models`.
     Args:
@@ -235,10 +237,10 @@ def fit_eigen_stratified_model(Q_tilde, eigvals, shape, l_prox, r_prox, G_data=d
         theta = l_prox(1. / rho, theta_tilde - u, theta, prox_pool)
         time_1 = time.perf_counter() - start_time_1
 
-        #Z update
+        # Z update
         start_time_2 = time.perf_counter()
 
-        Z = rho * (u.T + theta_tilde.T) @ Q_tilde * (1/(eigvals+rho))
+        Z = rho * (u.T + theta_tilde.T) @ Q_tilde * (1 / (eigvals + rho))
         time_2 = time.perf_counter() - start_time_2
 
         # theta_tilde update

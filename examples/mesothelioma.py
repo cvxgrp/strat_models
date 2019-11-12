@@ -65,7 +65,7 @@ G_age = nx.relabel_nodes(G_age, index_to_age)
 data_train = dict(X=X_train, Y=Y_train, Z=Z_train)
 data_test = dict(X=X_test, Y=Y_test, Z=Z_test)
 
-loss=strat_models.logistic_loss(intercept=True)
+loss = strat_models.logistic_loss(intercept=True)
 
 # Fit models
 print("fitting...")
@@ -102,8 +102,8 @@ print('Stratified model')
 print('\t', info)
 print('\t', anll_test, pred_error)
 
-data_common_train = dict(X=X_train, Y=Y_train, Z=[0]*len(Y_train))
-data_common_test = dict(X=X_test, Y=Y_test, Z=[0]*len(Y_test))
+data_common_train = dict(X=X_train, Y=Y_train, Z=[0] * len(Y_train))
+data_common_test = dict(X=X_test, Y=Y_test, Z=[0] * len(Y_test))
 
 G = nx.empty_graph(1)
 bm_common = strat_models.BaseModel(loss=loss)

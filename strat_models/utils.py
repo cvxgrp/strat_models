@@ -1,5 +1,6 @@
 import networkx as nx
 
+
 def set_edge_weight(G, wt):
     """Sets the edge weights in G to wt."""
     for _, _, e in G.edges(data=True):

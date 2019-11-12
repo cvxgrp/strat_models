@@ -43,6 +43,7 @@ np.random.seed(0)
 df_train, df_test = model_selection.train_test_split(df)
 G = nx.grid_2d_graph(bins, bins)
 
+
 def get_data(df):
     Xs = []
     Ys = []
@@ -77,11 +78,12 @@ data_test = dict(X=X_test, Y=Y_test, Z=Z_test)
 
 kwargs = dict(rel_tol=1e-5, abs_tol=1e-5, maxiter=1000, n_jobs=2, verbose=1)
 
+
 def rms(x):
     return np.sqrt(np.mean(np.square(x)))
 
-loss=strat_models.sum_squares_loss(intercept=True)
-reg= strat_models.sum_squares_reg(lambd=1e-4)
+loss = strat_models.sum_squares_loss(intercept=True)
+reg = strat_models.sum_squares_reg(lambd=1e-4)
 bm = strat_models.BaseModel(loss=loss, reg=reg)
 
 strat_models.set_edge_weight(G, 1e-8)
@@ -106,8 +108,8 @@ print("\t", score)
 G = nx.empty_graph(1)
 sm_common = strat_models.StratifiedModel(bm, graph=G)
 
-data_common_train = dict(X=X_train, Y=Y_train, Z=[0]*len(Y_train))
-data_common_test = dict(X=X_test, Y=Y_test, Z=[0]*len(Y_test))
+data_common_train = dict(X=X_train, Y=Y_train, Z=[0] * len(Y_train))
+data_common_test = dict(X=X_test, Y=Y_test, Z=[0] * len(Y_test))
 
 info = sm_common.fit(data_common_train, **kwargs)
 score = sm_common.scores(data_common_test)
@@ -126,7 +128,8 @@ print("\t", np.sum([rf.estimators_[i].tree_.node_count for i in range(50)]))
 
 # Visualize
 latexify(fig_width=8)
-params = np.array([sm_strat.G.node[node]['theta'] for node in sm_strat.G.nodes()])
+params = np.array([sm_strat.G.node[node]['theta']
+                   for node in sm_strat.G.nodes()])
 params = params.reshape(bins, bins, 10)[::-1, :, :]
 feats = ['bedrooms', 'bathrooms', 'sqft living', 'sqft lot', 'floors',
          'waterfront', 'condition', 'grade', 'yr built', 'intercept']

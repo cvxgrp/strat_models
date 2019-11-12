@@ -69,7 +69,7 @@ G_time = nx.relabel_nodes(G_time, dict(zip(np.arange(n_years), years)))
 kwargs = dict(abs_tol=1e-5, rel_tol=1e-5, maxiter=200, n_jobs=4, verbose=1)
 
 loss = strat_models.bernoulli_loss()
-reg = strat_models.clip_reg(lambd=(1e-5, 1-1e-5))
+reg = strat_models.clip_reg(lambd=(1e-5, 1 - 1e-5))
 bm = strat_models.BaseModel(loss=loss, reg=reg)
 
 
@@ -99,8 +99,8 @@ print("\t", info)
 print("\t", anll_train, anll_test)
 
 
-data_common_train = dict(Y=Y_train, Z=[0]*len(Y_train))
-data_common_test = dict(Y=Y_test, Z=[0]*len(Y_test))
+data_common_train = dict(Y=Y_train, Z=[0] * len(Y_train))
+data_common_test = dict(Y=Y_test, Z=[0] * len(Y_test))
 G = nx.empty_graph(1)
 sm_common = strat_models.StratifiedModel(bm, graph=G)
 

@@ -136,8 +136,8 @@ print("\t", info)
 print("\t", anll_train, anll_test)
 del G
 
-data_common_train = dict(Y=Y_train, Z=[0]*len(Y_train))
-data_common_test = dict(Y=Y_test, Z=[0]*len(Y_test))
+data_common_train = dict(Y=Y_train, Z=[0] * len(Y_train))
+data_common_test = dict(Y=Y_test, Z=[0] * len(Y_test))
 G = nx.empty_graph(1)
 sm_common = strat_models.StratifiedModel(bm, graph=G)
 
