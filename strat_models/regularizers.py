@@ -47,7 +47,38 @@ class sum_squares_reg(Regularizer):
 		if self.lambd == 0:
 			return nu
 		return nu / (1+t*self.lambd)
-		#return nu[:, :, :-1] / (1+t*self.lambd) #so you dont regularize the intercept
+		# return nu[:, :, :-1] / (1+t*self.lambd) #so you dont regularize the intercept
+
+class mtx_scaled_sum_squares_reg(Regularizer):
+	"""
+	r(theta) = (lambd/2) * || A @ theta ||^2
+	"""
+	def __init__(self, A, lambd=1):
+		super().__init__(lambd)
+		self.lambd=lambd
+		self.A = A
+		self.AtA = A.T @ A
+
+	def evaluate(self, theta):
+		if self.A.shape[1] != theta.shape[0]:
+			raise AssertionError("Dimension of scaling matrix is incompatible with dimension of vector")
+		return (self.lambd/2) * sum( (self.A @ theta)**2 )
+
+	def prox(self, t, nu, warm_start, pool):
+		if self.lambd == 0:
+			return nu
+
+		K, n = nu.shape
+
+		# print(K, n, nu.shape, self.A.shape)
+
+		inv_mtx = np.linalg.inv(np.eye(n) + t*self.lambd*self.AtA)
+
+		for i in range(K):
+			nu[i,:] = inv_mtx @ nu[i,:]
+		return nu
+
+		# return np.linalg.inv(np.eye(self.A.shape[1]) + t*self.lambd*self.AtA) @ nu
 
 class L1_reg(Regularizer):
 	def __init__(self, lambd=1):
@@ -110,6 +141,23 @@ class nonnegative_reg(Regularizer):
 		nu[nu < 0] = 0
 		return nu
 
+class simplex_reg(Regularizer):
+	def __init__(self, lambd=None):
+		super().__init__(lambd)
+
+	def evaluate(self, theta):
+		if theta >= 0:
+			if abs(sum(theta) - 1) <= 1e-4:
+				return 0
+		return np.inf
+
+	def prox(self, t, nu, warm_start, pool):
+		new_nu = np.zeros(nu.shape)
+		for i in range(nu.shape[0]):
+			new_nu[i,:] = project_onto_simplex(nu[i,:])
+		return new_nu
+
+
 class min_threshold_reg_one_elem(Regularizer):
 	def __init__(self, lambd=1e-5):
 		super().__init__(lambd)
@@ -133,3 +181,40 @@ class clip_reg(Regularizer):
 
 	def prox(self, t, nu, warm_start, pool):
 		return np.clip(nu, self.lambd[0], self.lambd[1])
+
+def project_onto_simplex(y):
+ 
+	a = np.ones(len(y))
+	l = y
+	idx = np.argsort(l)
+	d = len(l)
+ 
+	evalpL = lambda k: np.sum(a[idx[k:]]*(y[idx[k:]] - l[idx[k]]*a[idx[k:]]) ) -1
+ 
+ 
+	def bisectsearch():
+		idxL, idxH = 0, d-1
+		L = evalpL(idxL)
+		H = evalpL(idxH)
+ 
+		if L<0:
+			return idxL
+ 
+		while (idxH-idxL)>1:
+			iMid = int((idxL+idxH)/2)
+			M = evalpL(iMid)
+ 
+			if M>0:
+				idxL, L = iMid, M
+			else:
+				idxH, H = iMid, M
+ 
+		return idxH
+ 
+	k = bisectsearch()
+	lam = (np.sum(a[idx[k:]]*y[idx[k:]])-1)/np.sum(a[idx[k:]])
+ 
+	small_eps = 1e-6 #small amount so that prob can never be 0
+	x = np.maximum(0+small_eps, y-lam)
+ 
+	return x
