@@ -47,7 +47,6 @@ class sum_squares_reg(Regularizer):
 		if self.lambd == 0:
 			return nu
 		return nu / (1+t*self.lambd)
-		# return nu[:, :, :-1] / (1+t*self.lambd) #so you dont regularize the intercept
 
 class mtx_scaled_sum_squares_reg(Regularizer):
 	"""
@@ -70,15 +69,34 @@ class mtx_scaled_sum_squares_reg(Regularizer):
 
 		K, n = nu.shape
 
-		# print(K, n, nu.shape, self.A.shape)
-
 		inv_mtx = np.linalg.inv(np.eye(n) + t*self.lambd*self.AtA)
 
-		for i in range(K):
-			nu[i,:] = inv_mtx @ nu[i,:]
-		return nu
+		return nu@inv_mtx.T
 
-		# return np.linalg.inv(np.eye(self.A.shape[1]) + t*self.lambd*self.AtA) @ nu
+class mtx_scaled_plus_sum_squares_reg(Regularizer):
+	"""
+	r(theta) = (lambd/2) * (|| A @ theta ||^2 + ||theta||^2)
+	"""
+	def __init__(self, A, lambd=1):
+		super().__init__(lambd)
+		self.lambd=lambd
+		self.A = A
+		self.AtA = A.T @ A
+
+	def evaluate(self, theta):
+		if self.A.shape[1] != theta.shape[0]:
+			raise AssertionError("Dimension of scaling matrix is incompatible with dimension of vector")
+		return (self.lambd/2) * sum( (self.A @ theta)**2 )
+
+	def prox(self, t, nu, warm_start, pool):
+		if self.lambd == 0:
+			return nu
+
+		K, n = nu.shape
+
+		inv_mtx = np.linalg.inv((1+t*self.lambd)*np.eye(n) + t*self.lambd*self.AtA)
+
+		return nu@inv_mtx.T
 
 class L1_reg(Regularizer):
 	def __init__(self, lambd=1):
