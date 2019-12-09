@@ -145,6 +145,16 @@ class neg_log_reg(Regularizer):
 	def prox(self, t, nu, warm_start, pool):
 		return (nu + np.sqrt(nu**2 + 4*t*self.lambd))/2
 
+class trace_reg(Regularizer):
+	def __init__(self, lambd=1):
+		super().__init__(lambd)
+
+	def evaluate(self, theta):
+		return np.trace(theta)
+
+	def prox(self, t, nu, warm_start, pool):
+		return nu + self.lambd*t*np.eye(nu.shape)
+
 class nonnegative_reg(Regularizer):
 	def __init__(self, lambd=1):
 		super().__init__(lambd)
@@ -175,7 +185,6 @@ class simplex_reg(Regularizer):
 			new_nu[i,:] = project_onto_simplex(nu[i,:])
 		return new_nu
 
-
 class min_threshold_reg_one_elem(Regularizer):
 	def __init__(self, lambd=1e-5):
 		super().__init__(lambd)
@@ -199,6 +208,9 @@ class clip_reg(Regularizer):
 
 	def prox(self, t, nu, warm_start, pool):
 		return np.clip(nu, self.lambd[0], self.lambd[1])
+
+
+########## Utility Functions ##########
 
 def project_onto_simplex(y):
  
