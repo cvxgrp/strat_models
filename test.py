@@ -3,8 +3,7 @@ import strat_models
 import networkx as nx
 import numpy as np
 
-
-def test_ridge_regression_EIGEN():
+def test_eigen():
 	"""Example: solve ||X\theta - Y||^2 + ||\theta||^2"""
 
 	print("ridge regression test...")
@@ -33,6 +32,40 @@ def test_ridge_regression_EIGEN():
 	print("ANLL is {}".format(sm.anll(data)))
 
 	print("eigen-stratified ridge regression done.")
+
+def test_nonparametric_discrete():
+	print("Non-parametric discrete distibution test...")
+
+	K = 100
+	num_classes = 10
+	SIZE=100
+
+	G = nx.cycle_graph(K)
+	strat_models.utils.set_edge_weight(G, 10)
+
+	K_eye = np.eye(K)
+
+	Z = np.random.randint(K, size=SIZE)
+	Y = np.random.randint(0,num_classes, size=SIZE)
+
+	print(Z)
+
+	bm = strat_models.BaseModel(loss=strat_models.losses.nonparametric_discrete_loss(), 
+						reg=strat_models.regularizers.sum_squares_reg(lambd=0.4))
+
+	sm = strat_models.StratifiedModel(bm, graph=G)
+
+	data = dict(Y=Y, Z=Z)
+	kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=500)
+
+	info = sm.fit(data, **kwargs)
+	assert info["optimal"]	
+
+	data_test = dict(Z=np.random.randint(K, size=SIZE),Y=np.random.randint(0,num_classes, size=SIZE))
+
+	print("ANLL is {}".format(sm.anll(data_test)))
+
+	print("Non-parametric discrete loss done.")
 
 def test_poisson():
 	print("Poisson test...")
@@ -252,8 +285,10 @@ def test_joint_mean_covariance():
 
 if __name__ == '__main__':
 	np.random.seed(0)
-	test_ridge_regression_EIGEN()
+	
+	test_eigen()
 
+	test_nonparametric_discrete()
 	test_joint_mean_covariance()
 	test_trace_minus_logdet()
 	test_ridge_regression()
@@ -261,4 +296,5 @@ if __name__ == '__main__':
 	test_poisson()
 	test_bernoulli()
 	test_log_reg()
+
 	print("All tests passed!")

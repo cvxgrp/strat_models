@@ -1,9 +1,11 @@
 import numpy as np
 import torch
 from sklearn import preprocessing
-from scipy.stats import poisson, bernoulli
+from scipy.stats import poisson, bernoulli, multinomial
 import cvxpy as cp
 from scipy.optimize import minimize
+import math
+from strat_models.regularizers import project_onto_simplex
 
 class Loss:
 	"""
@@ -38,12 +40,12 @@ class Loss:
 		return -np.mean(self.logprob(data, G))
 
 def turn_into_iterable(x):
-    try:
-        iter(x)
-    except TypeError:
-        return [x]
-    else:
-        return x
+	try:
+		iter(x)
+	except TypeError:
+		return [x]
+	else:
+		return x
 
 def mean_cov_prox_cvxpy(Y, eta, theta, t):
 	if Y is None:
@@ -75,12 +77,12 @@ def mean_cov_prox_cvxpy(Y, eta, theta, t):
 	return np.hstack((S.value, nu.value))
 
 def find_solution(x):
-    """Finds the real solution to ax^3 + bx^2 + cx + d = 0."""
-    roots = np.roots(x)
-    for root in roots:
-        if np.isreal(root) and root >= 1e-4 and root <= 1 - 1e-4:
-            return np.real(root)
-    return 0.5
+	"""Finds the real solution to ax^3 + bx^2 + cx + d = 0."""
+	roots = np.roots(x)
+	for root in roots:
+		if np.isreal(root) and root >= 1e-4 and root <= 1 - 1e-4:
+			return np.real(root)
+	return 0.5
 
 def joint_cov_prox(Y, nu, theta, t):
 	"""
@@ -89,14 +91,10 @@ def joint_cov_prox(Y, nu, theta, t):
 	if Y is None:
 		return nu
 
-	Y = Y[0]
-	N = Y.shape[1]
-	Yemp = Y
-	# Yemp = Y@Y.T/N
+	Yemp = Y[0]
 
 	s, Q = np.linalg.eigh(Yemp - (1./t)*nu)
 	w = (1./2)*(-t*s + np.sqrt((t*s)**2 + 4*t))
-
 	return Q @ np.diag(w) @ Q.T
 
 def log_reg_prox(XY, nu, theta, t):
@@ -369,7 +367,6 @@ class mean_covariance_max_likelihood_loss(Loss):
 
 		return [np.random.multivariate_normal(mus[i], sigmas[i]) for i in range(len(sigmas))]
 		
-
 class covariance_max_likelihood_loss(Loss):
 	"""
 	f(theta) = Trace(theta @ Y) - logdet(theta)
@@ -422,7 +419,7 @@ class covariance_max_likelihood_loss(Loss):
 	def logprob(self, data, G):
 		Y = data["Y"]
 		thetas = [G._node[z]["theta"] for z in data["Z"]]
-		logprobs = [np.trace(Y[i]@thetas[i]) - np.linalg.slogdet(thetas[i])[1] for i in range(len(thetas))]
+		logprobs = [-np.trace(Y[i]@thetas[i]) + np.linalg.slogdet(thetas[i])[1] for i in range(len(thetas))]
 		return logprobs
 
 	def sample(self, data, G):
@@ -431,6 +428,93 @@ class covariance_max_likelihood_loss(Loss):
 
 		n = sigmas[0].shape[0]
 		return [np.random.multivariate_normal(np.zeros(n), sigma) for sigma in sigmas]
+
+def nonparametric_discrete_prox(Y, nu, theta, t):
+	if Y is None:
+		return nu
+	nu_tch = torch.from_numpy(nu)
+	theta_i = torch.from_numpy(theta).requires_grad_(True)
+	Y_tch = torch.from_numpy(Y).type(torch.float64)
+	optim = torch.optim.LBFGS([theta_i], lr=1, max_iter=60)
+
+	def closure():
+		optim.zero_grad()
+		loss = torch.log(torch.sum(torch.exp(theta_i))) * torch.sum(Y_tch) - Y_tch@theta_i
+		loss += torch.sum((theta_i - nu_tch)**2) / (2*t)
+		loss.backward()
+		return loss
+
+	optim.step(closure)
+	return theta_i.data.numpy()
+
+class nonparametric_discrete_loss(Loss):
+	def __init__(self):
+		super().__init__()
+		self.isDistribution = True
+
+	def evaluate(self, theta, data):
+		return 0
+
+	def setup(self, data, G):
+		Y = data["Y"]
+		Z = data["Z"]
+
+		self.le = preprocessing.LabelEncoder()
+		Y = self.le.fit_transform(Y).copy()
+		num_classes = len(self.le.classes_)
+
+		K = len(G.nodes())
+
+		shape = (num_classes,)
+		theta_shape = (K,) + shape
+
+		for y, z in zip(Y, Z):
+			vertex = G._node[z]
+			if "Y" not in vertex:
+				vertex['Y'] = np.zeros(num_classes)
+			vertex['Y'][y] += 1		
+
+		Y_data = []
+		counts = np.zeros((K, num_classes))
+		for i, node in enumerate(G.nodes()):
+			vertex = G._node[node]
+			if 'Y' in vertex:
+				Y_data += [vertex['Y']]
+				del vertex['Y']
+			else:
+				Y_data += [np.zeros(num_classes)]
+
+		cache = {"Y": Y_data, 'num_classes':num_classes, 'theta_shape':theta_shape, 'shape':shape, 'K':K}
+		return cache
+
+	def prox(self, t, nu, warm_start, pool, cache):
+		res = pool.starmap(nonparametric_discrete_prox, zip(cache["Y"], nu, warm_start, t * np.ones(cache["K"])))
+		return np.array(res)
+
+	def logprob(self, data, G):
+		Y = turn_into_iterable(self.le.transform(data["Y"]))
+		Z = turn_into_iterable(data["Z"])
+
+		nodes = {}
+		for y,z in zip(Y,Z):
+			if z not in nodes.keys():
+				nodes[z] = np.zeros((G._node[z]["theta"]).shape)
+			nodes[z][y] += 1
+
+		dim = int((G._node[z]["theta"]).shape[0])
+
+		logprobs = []
+		for z in nodes.keys():
+			theta = torch.from_numpy(G._node[z]["theta"])
+			Y_tch = torch.from_numpy(nodes[z]).type(torch.float64)
+			loss = (Y_tch@theta - torch.log(torch.sum(torch.exp(theta))) * torch.sum(Y_tch)).numpy()
+			logprobs += [loss/dim]
+		return logprobs
+
+	def sample(self, data, G):
+		Z = turn_into_iterable(data["Z"])
+		parameter = [G._node[z]["theta"] for z in Z]
+		return multinomial.rvs(n=1, p=parameter)
 
 class poisson_loss(Loss):
 	"""
