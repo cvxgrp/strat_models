@@ -12,8 +12,8 @@ class Regularizer:
 	"""
 
 	def __init__(self, lambd=1):
-		# if lambd < 0:
-		# 	raise ValueError("Regularization coefficient must be a nonnegative scalar.")
+		if lambd < 0:
+			raise ValueError("Regularization coefficient must be a nonnegative scalar.")
 
 		self.lambd = lambd
 
@@ -47,6 +47,17 @@ class sum_squares_reg(Regularizer):
 		if self.lambd == 0:
 			return nu
 		return nu / (1+t*self.lambd)
+
+class trace_reg(Regularizer):
+	def __init__(self, lambd=1):
+		super().__init__(lambd)
+		self.lambd = lambd
+
+	def evaluate(self, theta):
+		return np.trace(theta)
+
+	def prox(self, t, nu, warm_start, pool):
+		return nu - self.lambd*t*np.eye(nu.shape)
 
 class mtx_scaled_sum_squares_reg(Regularizer):
 	"""
