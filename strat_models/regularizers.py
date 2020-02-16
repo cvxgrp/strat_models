@@ -57,7 +57,11 @@ class trace_reg(Regularizer):
 		return np.trace(theta)
 
 	def prox(self, t, nu, warm_start, pool):
-		return nu - self.lambd*t*np.eye(nu.shape)
+		#nu of shape K, n, n
+		res = np.zeros(nu.shape)
+		for k in range(nu.shape[0]):
+			res[k, :, :] = nu[k, :, :] - self.lambd*t*np.eye(nu.shape[1])
+		return res
 
 class mtx_scaled_sum_squares_reg(Regularizer):
 	"""
@@ -180,16 +184,6 @@ class neg_log_reg(Regularizer):
 
 	def prox(self, t, nu, warm_start, pool):
 		return (nu + np.sqrt(nu**2 + 4*t*self.lambd))/2
-
-class trace_reg(Regularizer):
-	def __init__(self, lambd=1):
-		super().__init__(lambd)
-
-	def evaluate(self, theta):
-		return np.trace(theta)
-
-	def prox(self, t, nu, warm_start, pool):
-		return nu + self.lambd*t*np.eye(nu.shape)
 
 class nonnegative_reg(Regularizer):
 	def __init__(self, lambd=1):
