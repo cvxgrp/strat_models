@@ -239,6 +239,36 @@ class clip_reg(Regularizer):
 	def prox(self, t, nu, warm_start, pool):
 		return np.clip(nu, self.lambd[0], self.lambd[1])
 
+class trace_offdiagL1Norm(Regularizer):
+    """
+    r(theta) = lambd_0 * Tr(theta) + lambd_1 * || theta ||_{off diagonal, 1}
+    """
+    def __init__(self, lambd=(1,1)):
+        self.lambd = lambd
+    
+    def evaluate(self, theta):
+        od_idx = np.where(~np.eye(theta.shape[0],dtype=bool))
+        
+        return self.lambd[0]*np.trace(theta) + self.lambd[1]*np.norm(theta[od_idx], 1)
+    
+    def prox(self, t, nu, warm_start, pool):
+        if self.lambd == (0,0):
+            return nu
+        
+        K = nu.shape[0]
+        n = nu.shape[1]
+        
+        diag_idx = np.where(np.eye(n,dtype=bool))
+        od_idx = np.where(~np.eye(n,dtype=bool))
+        
+        T = np.zeros((K, n, n))
+
+        for k in range(K):
+            T[k][diag_idx] = nu[k][diag_idx] - self.lambd[0]*t
+            T[k][od_idx] = np.maximum(nu[k][od_idx] - self.lambd[1]*t, 0) - np.maximum(-nu[k][od_idx] - self.lambd[1]*t, 0)
+        
+        return T
+
 
 ########## Utility Functions ##########
 

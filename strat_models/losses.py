@@ -2,10 +2,6 @@ import numpy as np
 import torch
 from sklearn import preprocessing
 from scipy.stats import poisson, bernoulli, multinomial
-import cvxpy as cp
-from scipy.optimize import minimize
-import math
-from strat_models.regularizers import project_onto_simplex
 
 class Loss:
 	"""
@@ -47,35 +43,6 @@ def turn_into_iterable(x):
 	else:
 		return x
 
-def mean_cov_prox_cvxpy(Y, eta, theta, t):
-	if Y is None:
-		return eta
-	Y = Y[0]
-	n,N = Y.shape
-
-	ybar = cp.Parameter((n,1))
-	ybar.value = np.mean(Y,1).reshape(-1,1)
-
-	Yemp = cp.Parameter((n,n))
-	Yemp.value = Y @ Y.T / N
-
-	S = cp.Variable((n,n))
-	nu = cp.Variable((n,1))
-	eps = (1./(2*t))
-
-	main_part = -cp.log_det(S) 
-	main_part += cp.trace(S@Yemp) 
-	main_part += - 2*ybar.T@nu 
-	main_part += cp.matrix_frac(nu, S) 
-
-	prox_part = eps * cp.sum_squares(nu-eta[:, -1].reshape(-1,1))
-	prox_part += eps * cp.norm(S-eta[:, :-1], "fro")**2
-	prob = cp.Problem(cp.Minimize(N*main_part+prox_part))
-
-	prob.solve(verbose=False, warm_start=True)
-
-	return np.hstack((S.value, nu.value))
-
 def find_solution(x):
 	"""Finds the real solution to ax^3 + bx^2 + cx + d = 0."""
 	roots = np.roots(x)
@@ -85,17 +52,18 @@ def find_solution(x):
 	return 0.5
 
 def joint_cov_prox(Y, nu, theta, t):
-	"""
-	Proximal operator for joint covariance estimation
-	"""
-	if Y is None:
-		return nu
+    """
+    Proximal operator for joint covariance estimation
+    """
+    if Y is None:
+        return nu
 
-	Yemp = Y[0]
-
-	s, Q = np.linalg.eigh(Yemp - (1./t)*nu)
-	w = (1./2)*(-t*s + np.sqrt((t*s)**2 + 4*t))
-	return Q @ np.diag(w) @ Q.T
+    n, nk = Y[0].shape
+    Yemp = Y[0]@Y[0].T/nk
+    
+    s, Q = np.linalg.eigh(nu/(t*nk)-Yemp)
+    w = ((t*nk)*s + np.sqrt(((t*nk)*s)**2 + 4*(t*nk)))/2
+    return Q @ np.diag(w) @ Q.T
 
 def log_reg_prox(XY, nu, theta, t):
 	if XY is None:
@@ -113,6 +81,24 @@ def log_reg_prox(XY, nu, theta, t):
 		l = t * loss(X@theta_i, Y) + 0.5 * torch.sum((theta_i - nu_tch)**2)
 		l.backward()
 		return l
+
+	optim.step(closure)
+	return theta_i.data.numpy()
+
+def nonparametric_discrete_prox(Y, nu, theta, t):
+	if Y is None:
+		return nu
+	nu_tch = torch.from_numpy(nu)
+	theta_i = torch.from_numpy(theta).requires_grad_(True)
+	Y_tch = torch.from_numpy(Y).type(torch.float64)
+	optim = torch.optim.LBFGS([theta_i], lr=1, max_iter=60)
+
+	def closure():
+		optim.zero_grad()
+		loss = torch.log(torch.sum(torch.exp(theta_i))) * torch.sum(Y_tch) - Y_tch@theta_i
+		loss += torch.sum((theta_i - nu_tch)**2) / (2*t)
+		loss.backward()
+		return loss
 
 	optim.step(closure)
 	return theta_i.data.numpy()
@@ -291,161 +277,77 @@ class logistic_loss(Loss):
 		else:
 			return self.le.inverse_transform(torch.argmax(scores, 1).numpy())
 
-class mean_covariance_max_likelihood_loss(Loss):
-	"""
-	f(theta) = Trace(S yy^T) - logdet(S) - 2y^T \nu + \nu^T S^{-1} \nu
-	where theta = (S, \nu)
-	"""
-	def __init__(self):
-		super().__init__()
-		self.isDistribution = True
+class covariance_max_likelihood_loss(strat_models.Loss):
+    """
+    f(theta) = Trace(theta @ Y) - logdet(theta)
+    """
+    def __init__(self):
+        super().__init__()
+        self.isDistribution = True
 
-	def evaluate(self, theta, data):
-		assert y in data
-		y = data["y"]
-		S, nu = theta[:, :-1], theta[:, -1].reshape(-1,1)
-		return np.trace(S @ y @ y.T) - np.linalg.slogdet(S)[1] - 2*y.T@nu + nu.T @ np.linalg.inv(S) @ nu
+    def evaluate(self, theta, data):
+        assert "Y" in data
+        return np.trace(theta @ data["Y"]) - np.linalg.slogdet(theta)[1]
 
-	def setup(self, data, G):
-		Y = data["Y"]
-		Z = data["Z"]
+    def setup(self, data, G):
+        Y = data["Y"]
+        Z = data["Z"]
 
-		K = len(G.nodes())
-		shape = (data["n"], data["n"]+1)
-		theta_shape = (K,) + shape
+        K = len(G.nodes())
 
-		#preprocess data
-		for y, z in zip(Y, Z):
-			vertex = G._node[z]
-			if "Y" in vertex:
-				vertex["Y"] += [y]
-			else:
-				vertex['Y'] = [y]
+        shape = (data["n"], data["n"])
+        theta_shape = (K,) + shape
 
-		Y_data = []
-		for i, node in enumerate(G.nodes()):
-			vertex = G._node[node]
-			if 'Y' in vertex:
-				Y = vertex['Y']
-				Y_data += [Y]
-				del vertex['Y']
-			else:
-				Y_data += [None]
+        #preprocess data
+        for y, z in zip(Y, Z):
+            vertex = G._node[z]
+            if "Y" in vertex:
+                vertex["Y"] += [y]
+            else:
+                vertex["Y"] = [y]
 
-		cache = {"Y": Y_data, "n":data["n"], "theta_shape":theta_shape, "shape":shape, "K":K}
-		return cache
+        Y_data = []
+        for i, node in enumerate(G.nodes()):
+            vertex = G._node[node]
+            if 'Y' in vertex:
+                Y = vertex['Y']
+                Y_data += [Y]
+                del vertex['Y']
+            else:
+                Y_data += [None]
 
-	def prox(self, t, nu, warm_start, pool, cache):
-		"""
-		Proximal operator for joint mean-covariance estimation
-		"""
-		res = pool.starmap(mean_cov_prox_cvxpy, zip(cache["Y"], nu, warm_start, t*np.ones(cache["K"])))
-		return np.array(res)
+        cache = {"Y": Y_data, "n":data["n"], "theta_shape":theta_shape, "shape":shape, "K":K}
+        return cache
 
-	def logprob(self, data, G):
-		Y = data["Y"]
+    def prox(self, t, nu, warm_start, pool, cache):
+        """
+        Proximal operator for joint covariance estimation
+        """
+        res = pool.starmap(joint_cov_prox, zip(cache["Y"], nu, warm_start, t*np.ones(cache["K"])))
+        return np.array(res)
 
-		N = data["Y"][1].shape[0]
+    def logprob(self, data, G):
+        
+        logprobs = []
+        
+        for y,z in zip(data["Y"], data["Z"]):
+            n, nk = y.shape
+            Y = (y@y.T)/nk
+            
+            if (np.zeros((n,n)) == Y).all():
+                continue            
+            
+            theta = G._node[z]["theta_tilde"]
+            logprobs += [np.linalg.slogdet(theta)[1] - np.trace(Y@theta)]
 
-		thetas = [G._node[z]["theta"] for z in data["Z"]]
-		S = [theta[:,:-1] for theta in thetas]
-		nu = [theta[:,-1].reshape(-1,1) for theta in thetas]
+        return logprobs
 
-		logprobs = [float(np.trace(S[i] @ Y[i]@Y[i].T) 
-						- N*np.linalg.slogdet(S[i])[1] 
-						- 2*N*(np.mean(Y[i],1).reshape(-1,1)).T@nu[i] 
-						+ N*nu[i].T @ np.linalg.inv(S[i]) @ nu[i] )
-							for i in range(len(thetas))]
-		return logprobs
+    def sample(self, data, G):
+        Z = turn_into_iterable(data["Z"])
+        sigmas = [np.linalg.inv(G._node[z]["theta"]) for z in Z]
 
-	def sample(self, data, G):
-		Z = turn_into_iterable(data["Z"])
-		thetas = [G._node[z]["theta"] for z in data["Z"]]
-
-		sigmas = [np.linalg.inv(theta[:,:-1]) for theta in thetas]
-		mus = [sigmas[i] @ thetas[i][:,-1] for i in range(len(sigmas))]
-
-		return [np.random.multivariate_normal(mus[i], sigmas[i]) for i in range(len(sigmas))]
-		
-class covariance_max_likelihood_loss(Loss):
-	"""
-	f(theta) = Trace(theta @ Y) - logdet(theta)
-	"""
-	def __init__(self):
-		super().__init__()
-		self.isDistribution = True
-
-	def evaluate(self, theta, data):
-		assert "Y" in data
-		return np.trace(theta @ data["Y"]) - np.linalg.slogdet(theta)[1]
-
-	def setup(self, data, G):
-		Y = data["Y"]
-		Z = data["Z"]
-
-		K = len(G.nodes())
-
-		shape = (data["n"], data["n"])
-		theta_shape = (K,) + shape
-
-		#preprocess data
-		for y, z in zip(Y, Z):
-			vertex = G._node[z]
-			if "Y" in vertex:
-				vertex["Y"] += [y]
-			else:
-				vertex["Y"] = [y]
-
-		Y_data = []
-		for i, node in enumerate(G.nodes()):
-			vertex = G._node[node]
-			if 'Y' in vertex:
-				Y = vertex['Y']
-				Y_data += [Y]
-				del vertex['Y']
-			else:
-				Y_data += [None]
-
-		cache = {"Y": Y_data, "n":data["n"], "theta_shape":theta_shape, "shape":shape, "K":K}
-		return cache
-
-	def prox(self, t, nu, warm_start, pool, cache):
-		"""
-		Proximal operator for joint covariance estimation
-		"""
-		res = pool.starmap(joint_cov_prox, zip(cache["Y"], nu, warm_start, t*np.ones(cache["K"])))
-		return np.array(res)
-
-	def logprob(self, data, G):
-		Y = data["Y"]
-		thetas = [G._node[z]["theta"] for z in data["Z"]]
-		logprobs = [-np.trace(Y[i]@thetas[i]) + np.linalg.slogdet(thetas[i])[1] for i in range(len(thetas))]
-		return logprobs
-
-	def sample(self, data, G):
-		Z = turn_into_iterable(data["Z"])
-		sigmas = [np.linalg.inv(G._node[z]["theta"]) for z in Z]
-
-		n = sigmas[0].shape[0]
-		return [np.random.multivariate_normal(np.zeros(n), sigma) for sigma in sigmas]
-
-def nonparametric_discrete_prox(Y, nu, theta, t):
-	if Y is None:
-		return nu
-	nu_tch = torch.from_numpy(nu)
-	theta_i = torch.from_numpy(theta).requires_grad_(True)
-	Y_tch = torch.from_numpy(Y).type(torch.float64)
-	optim = torch.optim.LBFGS([theta_i], lr=1, max_iter=60)
-
-	def closure():
-		optim.zero_grad()
-		loss = torch.log(torch.sum(torch.exp(theta_i))) * torch.sum(Y_tch) - Y_tch@theta_i
-		loss += torch.sum((theta_i - nu_tch)**2) / (2*t)
-		loss.backward()
-		return loss
-
-	optim.step(closure)
-	return theta_i.data.numpy()
+        n = sigmas[0].shape[0]
+        return [np.random.multivariate_normal(np.zeros(n), sigma) for sigma in sigmas]
 
 class nonparametric_discrete_loss(Loss):
 	def __init__(self):
