@@ -208,89 +208,11 @@ def test_bernoulli():
 
 	print("Bernoulli done.")
 
-def test_trace_minus_logdet():
-	print("Trace minus logdet test...")
-	K = 3
-	n = 10
-
-	G = nx.cycle_graph(K)
-	for edge in G.edges():
-		G.add_edge(edge[0], edge[1], weight=0.1)
-
-	Z = np.array(list(G.nodes()))
-	Y = [np.cov(np.random.randn(n,n)) + np.eye(n) for _ in range(K)]
-	bm = strat_models.BaseModel(loss=strat_models.losses.covariance_max_likelihood_loss(), 
-		reg=strat_models.regularizers.L1_reg(lambd=1))
-	sm = strat_models.StratifiedModel(bm, graph=G)
-
-	data = dict(Y=Y, Z=Z, n=n)
-
-	kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=900)
-
-	info = sm.fit(data, **kwargs)
-	# print(info)
-
-	print("ANLL is {}".format(sm.anll(data)))
-
-	assert info["optimal"]
-
-	data_sample = dict(Z=np.random.randint(K, size=5))
-	samples = sm.sample(data=data_sample)
-
-	print("Trace minus logdet done.")
-
-def test_joint_mean_covariance():
-	print("Joint mean covariance test...")
-	K = 3
-	G = nx.cycle_graph(K)
-	G.add_edge(0,1,weight=0.01)
-	G.add_edge(1,2,weight=0.01)
-	G.add_edge(2,0,weight=0.01)
-	Z = np.array(list(G.nodes()))
-
-	n = 10
-	mus = [np.ones(n) for _ in range(K)]
-	S = [np.random.randn(n,n) for _ in range(K)]
-	S = [np.cov(s) + np.eye(n) for s in S]
-
-	Y = [np.random.multivariate_normal(mus[k], S[k], 9).T for k in range(K)]
-
-	[print(np.mean(y,1)) for y in Y]
-
-	bm = strat_models.BaseModel(loss=strat_models.losses.mean_covariance_max_likelihood_loss(),
-			reg=strat_models.regularizers.sum_squares_reg(lambd=0))
-	sm = strat_models.StratifiedModel(bm, graph=G)
-
-	data = dict(Y=Y, Z=Z, n=n)
-
-	kwargs = dict(verbose=True, abs_tol=1e-6, maxiter=20, n_jobs=2)
-
-	info = sm.fit(data, **kwargs)
-
-	Snu = sm.G._node[0]["theta"]
-
-	S_star = np.linalg.inv(Snu[:,:-1])
-	mu_star = S_star @ Snu[:,-1]
-
-	print(S[0], mus[0])
-	print(S_star, mu_star)
-
-	print(info)
-	print("ANLL is {}".format(sm.anll(data)))
-
-	data_sample = dict(Z=np.random.randint(K, size=5))
-	samples = sm.sample(data=data_sample)
-
-	print("Joint mean covariance done.")
-
 if __name__ == '__main__':
 	np.random.seed(0)
 	
 	test_eigen()
-
 	test_nonparametric_discrete()
-	test_joint_mean_covariance()
-	test_trace_minus_logdet()
 	test_ridge_regression()
 	test_lasso()
 	test_poisson()

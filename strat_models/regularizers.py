@@ -12,7 +12,7 @@ class Regularizer:
 	"""
 
 	def __init__(self, lambd=1):
-		if lambd < 0:
+		if type(lambd) in [int, float] and lambd < 0:
 			raise ValueError("Regularization coefficient must be a nonnegative scalar.")
 
 		self.lambd = lambd

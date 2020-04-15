@@ -277,7 +277,7 @@ class logistic_loss(Loss):
 		else:
 			return self.le.inverse_transform(torch.argmax(scores, 1).numpy())
 
-class covariance_max_likelihood_loss(strat_models.Loss):
+class covariance_max_likelihood_loss(Loss):
     """
     f(theta) = Trace(theta @ Y) - logdet(theta)
     """
