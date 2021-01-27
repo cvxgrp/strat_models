@@ -94,9 +94,6 @@ Xtest, Ytest, Ztest = get_test_data()
 data = dict(X=X, Y=Y, Z=Z)
 
 # Construct the model
-m = strat_models.RidgeRegression(lambd=0.05)
-m.fit(X, Y, Z, G)
-
 bm = strat_models.BaseModel(loss=strat_models.sum_squares_loss(intercept=True),
 							reg=strat_models.sum_squares_reg(lambd=1))
 
@@ -122,7 +119,7 @@ python house.py
 
 ## Citing `strat_models`
 
-If you use `strat_models`, please cite the following paper:
+If you use `strat_models`, please cite the following papers:
 
 ```
 @article{strat_models,
@@ -131,3 +128,10 @@ If you use `strat_models`, please cite the following paper:
     journal      = {arXiv preprint arXiv:1904.12017},
     year         = {2019},
 }
+
+@article{eigen_strat_models,
+	author = {Tuck, J. and Boyd, S.,
+	Title = {Eigen-stratified models},
+	journal = {Optimization and Engineering},
+	Year = {2021},
+    }
