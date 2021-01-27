@@ -131,7 +131,7 @@ If you use `strat_models`, please cite the following papers:
 
 @article{eigen_strat_models,
 	author = {Tuck, J. and Boyd, S.,
-	Title = {Eigen-stratified models},
+	title = {Eigen-stratified models},
 	journal = {Optimization and Engineering},
-	Year = {2021},
-    }
+	year = {2021},
+}
